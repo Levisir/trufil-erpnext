@@ -28,11 +28,6 @@ def get_data():
 				},
 				{
 					"type": "doctype",
-					"name": "Sample Entry Register",
-					"description": _("All sample details."),
-				},
-				{
-					"type": "doctype",
 					"name": "Newsletter",
 					"description": _("Newsletters to contacts, leads."),
 				},
@@ -42,26 +37,6 @@ def get_data():
 			"label": _("Master"),
 			"icon": "icon-wrench",
 			"items": [
-				{
-					"type": "doctype",
-					"name": "Equipment",
-					"description":_("Equipment Details."),
-				},
-				{
-					"type": "doctype",
-					"name": "Equipment Make",
-					"description":_("Equipment make details."),
-				},
-				{
-					"type": "doctype",
-					"name": "Equipment Type",
-					"description":_("Equipment type details."),
-				},
-				{
-					"type": "doctype",
-					"name": "Functional Location",
-					"description":_("Transformer functional location details."),
-				},
 				{
 					"type": "doctype",
 					"name": "City",

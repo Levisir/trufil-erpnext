@@ -108,7 +108,7 @@ doc_events = {
 		"validate": "erpnext.crm.doctype.crm_module_customization.generate_contact_code"
 	},
 	"Address": {
-		"Svalidate": "erpnext.crm.doctype.crm_module_customization.generate_address_code"
+		"validate": "erpnext.crm.doctype.crm_module_customization.generate_address_code"
 	}
 
 }

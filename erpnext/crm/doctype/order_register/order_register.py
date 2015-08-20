@@ -14,14 +14,16 @@ class OrderRegister(Document):
 def get_contact_details(contact):
 	contact = frappe.get_doc("Contact", contact)
 	out = {
-		"contact_person": contact.get("name"),
+		"contact_person": contact.get("name") or " ",
 		"contact_display": " ".join(filter(None,
-			[contact.get("first_name"), contact.get("last_name")])),
-		"contact_email": contact.get("email_id"),
-		"contact_mobile": contact.get("mobile_no"),
-		"contact_phone": contact.get("phone"),
-		"contact_designation": contact.get("designation"),
-		"contact_department": contact.get("department"),
-		"contact_personal_email" : contact.get("personal_email")
+			[contact.get("first_name"), contact.get("last_name")])) or " ",
+		"contact_email": contact.get("email_id") or " ",
+		"contact_mobile": contact.get("mobile_no")or " ",
+		"contact_phone": contact.get("phone") or " ",
+		"contact_designation": contact.get("designation") or " ",
+		"contact_department": contact.get("department") or " ",
+		"contact_personal_email" : contact.get("personal_email") or " "
 	}
 	return out
+
+

@@ -2,6 +2,7 @@
 // License: GNU General Public License v3. See license.txt
 
 cur_frm.add_fetch('customer','customer_name','customer_name');
+cur_frm.add_fetch('customer','customer_code','customer_code');
 
 // Method to get address details
 cur_frm.cscript.admin_address = function(doc,cdt,cdn){
