@@ -1,6 +1,12 @@
 // Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 
 
+cur_frm.cscript.refresh = function(doc,cdt,cdn){
+	cur_frm.toggle_enable('user_input', doc.__islocal);
+	if(doc.naming_series=='CUST-')
+		cur_frm.toggle_enable('customer_code', doc.__islocal);
+	
+}
 
 cur_frm.add_fetch('customer','customer_code','customer_code');
 
@@ -29,3 +35,4 @@ if(last_route && last_route[0]==="Form") {
 cur_frm.add_fetch('city','state','state');
 cur_frm.add_fetch('city','district','district');
 cur_frm.add_fetch('city','country','country');
+

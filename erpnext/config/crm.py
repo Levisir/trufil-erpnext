@@ -24,7 +24,7 @@ def get_data():
 				{
 					"type": "doctype",
 					"name": "Order Register",
-					"description": _("Customers registered orders list."),
+					"description": _("Customer orders list."),
 				},
 				{
 					"type": "doctype",
@@ -34,13 +34,23 @@ def get_data():
 			]
 		},
 		{
-			"label": _("Master"),
+			"label": _("Masters"),
 			"icon": "icon-wrench",
 			"items": [
 				{
 					"type": "doctype",
 					"name": "City",
 					"description":_("All Cities."),
+				},
+				{
+					"type": "doctype",
+					"name": "State",
+					"description":_("All State."),
+				},
+				{
+					"type": "doctype",
+					"name": "District",
+					"description":_("All District."),
 				},
 			]
 		},

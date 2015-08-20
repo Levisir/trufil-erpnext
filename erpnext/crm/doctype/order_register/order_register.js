@@ -75,3 +75,5 @@ cur_frm.fields_dict['admin_address'].get_query = function(doc) {
 		}
 	}
 }
+
+

@@ -1,6 +1,8 @@
 // Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
 
+{% include 'erpnext/crm/crm_module_customization.js' %};
+
 frappe.ui.form.on("Customer", "refresh", function(frm) {
 	cur_frm.cscript.setup_dashboard(frm.doc);
 

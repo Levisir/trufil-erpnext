@@ -19,7 +19,7 @@ def generate_contact_code(doc,method):
 		doc.contact_code = doc.customer_code + '-' + doc.user_input
 	if doc.contact_code:
 		if frappe.db.sql("""select name from `tabContact` where name!='%s' and customer='%s' and user_input='%s'"""%(doc.name,doc.customer,doc.user_input)):
-			frappe.msgprint("Same user input '%s' is already assigned against same customer in another contact"%doc.user_input,raise_exception=1)
+			frappe.msgprint("Same contact abbriviation '%s' is already assigned against same customer in another contact"%doc.user_input,raise_exception=1)
 
 
 # Generation of address code while saving the new address
@@ -28,5 +28,5 @@ def generate_address_code(doc,method):
 		doc.address_code = doc.customer_code + '-' + doc.user_input
 	if doc.address_code:
 		if frappe.db.sql("""select name from `tabAddress` where name!='%s' and customer='%s' and user_input='%s'"""%(doc.name,doc.customer,doc.user_input)):
-			frappe.msgprint("Same user input '%s' is already assigned against same customer in another address"%doc.user_input,raise_exception=1)
+			frappe.msgprint("Same address abbriviation '%s' is already assigned against same customer in another address"%doc.user_input,raise_exception=1)
 
