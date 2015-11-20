@@ -50,7 +50,8 @@ cur_frm.fields_dict['administrative_contact'].get_query = function(doc) {
 	return {
 		filters: {
 			
-			"admin_contact": 1
+			"admin_contact": 1,
+			"customer": doc.customer
 		}
 	}
 }
@@ -60,7 +61,9 @@ cur_frm.fields_dict['billing_contact'].get_query = function(doc) {
 	return {
 		filters: {
 			
-			"billing_contact": 1
+			"billing_contact": 1,
+			"customer": doc.customer
+
 		}
 	}
 }
@@ -71,9 +74,28 @@ cur_frm.fields_dict['admin_address'].get_query = function(doc) {
 	return {
 		filters: {
 			
-			"address_type": 'Administrative'
+			"address_type": 'Administrative',
+			"customer": doc.customer
 		}
 	}
 }
 
+//Validation
+cur_frm.cscript.order_expiry_date = function(doc,cdt,cdn){
+	if(doc.order_expiry_date && doc.order_date){
+		var expiry_date = new Date(doc.order_expiry_date);
+		var order_date = new Date(doc.order_date);
+		if(expiry_date<order_date)
+			msgprint("Expiry Date must be greater than order date")
+	}
+}
 
+//validation
+cur_frm.cscript.order_closing_date = function(doc,cdt,cdn){
+	if(doc.order_closing_date && doc.order_date){
+		var closing_date = new Date(doc.order_closing_date);
+		var order_date = new Date(doc.order_date);
+		if(closing_date<order_date)
+			msgprint("Order Closing Date must be greater than order date")
+	}
+}

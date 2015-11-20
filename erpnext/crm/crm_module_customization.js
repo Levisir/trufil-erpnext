@@ -5,14 +5,10 @@ cur_frm.cscript.refresh = function(doc,cdt,cdn){
 	cur_frm.toggle_enable('user_input', doc.__islocal);
 	if(doc.naming_series=='CUST-')
 		cur_frm.toggle_enable('customer_code', doc.__islocal);
-	
-}
 
-cur_frm.add_fetch('customer','customer_code','customer_code');
-
-var last_route = frappe.route_history.slice(-2, -1)[0];
-if(last_route && last_route[0]==="Form") {
-	var doctype = last_route[1],
+	var last_route = frappe.route_history.slice(-2, -1)[0];
+	if(last_route && last_route[0]==="Form") {
+		var doctype = last_route[1],
 		docname = last_route.slice(2).join("/");
 
 	if(["Customer", "Quotation", "Sales Order", "Sales Invoice", "Delivery Note",
@@ -28,9 +24,11 @@ if(last_route && last_route[0]==="Form") {
 		}
 	}
 
-
+}
+	
 }
 
+cur_frm.add_fetch('customer','customer_code','customer_code');
 
 cur_frm.add_fetch('city','state','state');
 cur_frm.add_fetch('city','district','district');
