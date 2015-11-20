@@ -23,13 +23,34 @@ def get_data():
 				},
 				{
 					"type": "doctype",
-					"name": "Contact",
-					"description": _("All Contacts."),
+					"name": "Order Register",
+					"description": _("Customer orders list."),
 				},
 				{
 					"type": "doctype",
 					"name": "Newsletter",
 					"description": _("Newsletters to contacts, leads."),
+				},
+			]
+		},
+		{
+			"label": _("Masters"),
+			"icon": "icon-wrench",
+			"items": [
+				{
+					"type": "doctype",
+					"name": "City",
+					"description":_("All Cities."),
+				},
+				{
+					"type": "doctype",
+					"name": "State",
+					"description":_("All State."),
+				},
+				{
+					"type": "doctype",
+					"name": "District",
+					"description":_("All District."),
 				},
 			]
 		},

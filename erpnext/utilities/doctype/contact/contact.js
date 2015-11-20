@@ -2,6 +2,7 @@
 // License: GNU General Public License v3. See license.txt
 
 {% include 'controllers/js/contact_address_common.js' %};
+{% include 'erpnext/crm/crm_module_customization.js' %};
 
 cur_frm.email_field = "email_id";
 frappe.ui.form.on("Contact", "validate", function(frm) {
