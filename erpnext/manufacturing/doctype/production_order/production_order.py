@@ -2,23 +2,25 @@
 # License: GNU General Public License v3. See license.txt
 
 from __future__ import unicode_literals
-import frappe, json
+import frappe
 
-from frappe.utils import flt, nowdate, get_datetime, getdate, date_diff, cint
+from frappe.utils import flt, get_datetime, getdate, date_diff, cint, nowdate
 from frappe import _
 from frappe.model.document import Document
 from erpnext.manufacturing.doctype.bom.bom import validate_bom_no
 from dateutil.relativedelta import relativedelta
 from erpnext.stock.doctype.item.item import validate_end_of_life
+from erpnext.manufacturing.doctype.workstation.workstation import WorkstationHolidayError, NotInWorkingHoursError
+from erpnext.projects.doctype.time_log.time_log import OverlapError
+from erpnext.stock.doctype.stock_entry.stock_entry import get_additional_costs
+from erpnext.manufacturing.doctype.manufacturing_settings.manufacturing_settings import get_mins_between_operations
+from erpnext.stock.stock_balance import get_planned_qty, update_bin_qty
 
 class OverProductionError(frappe.ValidationError): pass
 class StockOverProductionError(frappe.ValidationError): pass
 class OperationTooLongError(frappe.ValidationError): pass
 class ProductionNotApplicableError(frappe.ValidationError): pass
 class ItemHasVariantError(frappe.ValidationError): pass
-
-from erpnext.manufacturing.doctype.workstation.workstation import WorkstationHolidayError, NotInWorkingHoursError
-from erpnext.projects.doctype.time_log.time_log import OverlapError
 
 form_grid_templates = {
 	"operations": "templates/form_grid/production_order_grid.html"
@@ -41,6 +43,8 @@ class ProductionOrder(Document):
 		self.validate_warehouse()
 		self.calculate_operating_cost()
 		self.validate_delivery_date()
+		self.validate_qty()
+		self.validate_operation_time()
 
 		from erpnext.utilities.transaction_base import validate_uom_is_integer
 		validate_uom_is_integer(self, "stock_uom", ["qty", "produced_qty"])
@@ -103,9 +107,9 @@ class ProductionOrder(Document):
 	def stop_unstop(self, status):
 		""" Called from client side on Stop/Unstop event"""
 		self.update_status(status)
-		qty = (flt(self.qty)-flt(self.produced_qty)) * ((status == 'Stopped') and -1 or 1)
-		self.update_planned_qty(qty)
+		self.update_planned_qty()
 		frappe.msgprint(_("Production Order status is {0}").format(status))
+		self.notify_update()
 
 
 	def update_status(self, status=None):
@@ -150,30 +154,30 @@ class ProductionOrder(Document):
 			frappe.throw(_("For Warehouse is required before Submit"))
 		frappe.db.set(self,'status', 'Submitted')
 		self.make_time_logs()
-		self.update_planned_qty(self.qty)
+		self.update_planned_qty()
 
 
 	def on_cancel(self):
+		self.validate_cancel()
+
+		frappe.db.set(self,'status', 'Cancelled')
+		self.update_planned_qty()
+		self.delete_time_logs()
+
+	def validate_cancel(self):
+		if self.status == "Stopped":
+			frappe.throw(_("Stopped Production Order cannot be cancelled, Unstop it first to cancel"))
+
 		# Check whether any stock entry exists against this Production Order
 		stock_entry = frappe.db.sql("""select name from `tabStock Entry`
 			where production_order = %s and docstatus = 1""", self.name)
 		if stock_entry:
 			frappe.throw(_("Cannot cancel because submitted Stock Entry {0} exists").format(stock_entry[0][0]))
 
-		frappe.db.set(self,'status', 'Cancelled')
-		self.update_planned_qty(-self.qty)
-		self.delete_time_logs()
-
-	def update_planned_qty(self, qty):
-		"""update planned qty in bin"""
-		args = {
-			"item_code": self.production_item,
-			"warehouse": self.fg_warehouse,
-			"posting_date": nowdate(),
-			"planned_qty": flt(qty)
-		}
-		from erpnext.stock.utils import update_bin
-		update_bin(args)
+	def update_planned_qty(self):
+		update_bin_qty(self.production_item, self.fg_warehouse, {
+			"planned_qty": get_planned_qty(self.production_item, self.fg_warehouse)
+		})
 
 	def set_production_order_operations(self):
 		"""Fetch operations from BOM and set in 'Production Order'"""
@@ -231,6 +235,7 @@ class ProductionOrder(Document):
 			original_start_time = time_log.from_time
 			while True:
 				_from_time = time_log.from_time
+
 				try:
 					time_log.save()
 					break
@@ -248,6 +253,7 @@ class ProductionOrder(Document):
 					frappe.msgprint(_("Unable to find Time Slot in the next {0} days for Operation {1}").format(plan_days, d.operation))
 					break
 
+				# if time log needs to be moved, make sure that the from time is not the same
 				if _from_time == time_log.from_time:
 					frappe.throw("Capacity Planning Error")
 
@@ -273,18 +279,12 @@ class ProductionOrder(Document):
 				d.planned_start_time = self.planned_start_date
 			else:
 				d.planned_start_time = get_datetime(self.operations[i-1].planned_end_time)\
-					+ self.get_mins_between_operations()
+					+ get_mins_between_operations()
 
 			d.planned_end_time = get_datetime(d.planned_start_time) + relativedelta(minutes = d.time_in_mins)
 
 			if d.planned_start_time == d.planned_end_time:
 				frappe.throw(_("Capacity Planning Error"))
-
-	def get_mins_between_operations(self):
-		if not hasattr(self, "_mins_between_operations"):
-			self._mins_between_operations = cint(frappe.db.get_single_value("Manufacturing Settings",
-				"mins_between_operations")) or 10
-		return relativedelta(minutes=self._mins_between_operations)
 
 	def check_operation_fits_in_working_hours(self, d):
 		"""Raises expection if operation is longer than working hours in the given workstation."""
@@ -330,11 +330,20 @@ class ProductionOrder(Document):
 
 		validate_end_of_life(self.production_item)
 
+	def validate_qty(self):
+		if not self.qty > 0:
+			frappe.throw(_("Quantity to Manufacture must be greater than 0."))
+
+	def validate_operation_time(self):
+		for d in self.operations:
+			if not d.time_in_mins > 0:
+				frappe.throw(_("Operation Time must be greater than 0 for Operation {0}".format(d.operation)))
+
 @frappe.whitelist()
 def get_item_details(item):
 	res = frappe.db.sql("""select stock_uom, description
-		from `tabItem` where (ifnull(end_of_life, "0000-00-00")="0000-00-00" or end_of_life > now())
-		and name=%s""", item, as_dict=1)
+		from `tabItem` where disabled=0 and (end_of_life is null or end_of_life='0000-00-00' or end_of_life > %s)
+		and name=%s""", (nowdate(), item), as_dict=1)
 	if not res:
 		return {}
 
@@ -356,7 +365,6 @@ def make_stock_entry(production_order_id, purpose, qty=None):
 	stock_entry.company = production_order.company
 	stock_entry.from_bom = 1
 	stock_entry.bom_no = production_order.bom_no
-	stock_entry.additional_operating_cost = production_order.additional_operating_cost
 	stock_entry.use_multi_level_bom = production_order.use_multi_level_bom
 	stock_entry.fg_completed_qty = qty or (flt(production_order.qty) - flt(production_order.produced_qty))
 
@@ -365,25 +373,25 @@ def make_stock_entry(production_order_id, purpose, qty=None):
 	else:
 		stock_entry.from_warehouse = production_order.wip_warehouse
 		stock_entry.to_warehouse = production_order.fg_warehouse
+		additional_costs = get_additional_costs(production_order, fg_qty=stock_entry.fg_completed_qty)
+		stock_entry.set("additional_costs", additional_costs)
 
 	stock_entry.get_items()
 	return stock_entry.as_dict()
 
 @frappe.whitelist()
 def get_events(start, end, filters=None):
-	from frappe.desk.reportview import build_match_conditions
-	if not frappe.has_permission("Production Order"):
-		frappe.msgprint(_("No Permission"), raise_exception=1)
+	"""Returns events for Gantt / Calendar view rendering.
 
-	conditions = build_match_conditions("Production Order")
-	conditions = conditions and (" and " + conditions) or ""
-	if filters:
-		filters = json.loads(filters)
-		for key in filters:
-			if filters[key]:
-				conditions += " and " + key + ' = "' + filters[key].replace('"', '\"') + '"'
+	:param start: Start date-time.
+	:param end: End date-time.
+	:param filters: Filters (JSON).
+	"""
+	from frappe.desk.calendar import get_event_conditions
+	conditions = get_event_conditions("Production Order", filters)
 
-	data = frappe.db.sql("""select name, production_item, planned_start_date, planned_end_date
+	data = frappe.db.sql("""select name, production_item, planned_start_date,
+		planned_end_date, status
 		from `tabProduction Order`
 		where ((ifnull(planned_start_date, '0000-00-00')!= '0000-00-00') \
 				and (planned_start_date between %(start)s and %(end)s) \
@@ -412,3 +420,9 @@ def make_time_log(name, operation, from_time=None, to_time=None, qty=None,  proj
 	if from_time and to_time :
 		time_log.calculate_total_hours()
 	return time_log
+
+@frappe.whitelist()
+def get_default_warehouse():
+	wip_warehouse = frappe.db.get_single_value("Manufacturing Settings", "default_wip_warehouse")
+	fg_warehouse = frappe.db.get_single_value("Manufacturing Settings", "default_fg_warehouse")
+	return {"wip_warehouse": wip_warehouse, "fg_warehouse": fg_warehouse}

@@ -4,7 +4,7 @@ import frappe.utils
 import frappe.defaults
 
 from frappe.utils import add_days, cint, cstr, date_diff, flt, getdate, nowdate, \
-	get_first_day, get_last_day, comma_and
+	get_first_day, get_last_day, comma_and, split_emails
 from frappe.model.naming import make_autoname
 
 from frappe import _, msgprint, throw
@@ -33,11 +33,11 @@ def manage_recurring_documents(doctype, next_date=None, commit=True):
 	next_date = next_date or nowdate()
 
 	date_field = date_field_map[doctype]
-	
+
 	condition = " and ifnull(status, '') != 'Stopped'" if doctype in ("Sales Order", "Purchase Order") else ""
 
 	recurring_documents = frappe.db.sql("""select name, recurring_id
-		from `tab{0}` where ifnull(is_recurring, 0)=1
+		from `tab{0}` where is_recurring=1
 		and docstatus=1 and next_date=%s
 		and next_date <= ifnull(end_date, '2199-12-31') {1}""".format(doctype, condition), next_date)
 
@@ -163,7 +163,7 @@ def validate_recurring_document(doc):
 			raise_exception=1)
 
 		elif not (doc.from_date and doc.to_date):
-			throw(_("Period From and Period To dates mandatory for recurring %s") % doc.doctype)
+			throw(_("Period From and Period To dates mandatory for recurring {0}").format(doc.doctype))
 
 #
 def convert_to_recurring(doc, posting_date):
@@ -180,8 +180,7 @@ def convert_to_recurring(doc, posting_date):
 
 def validate_notification_email_id(doc):
 	if doc.notification_email_address:
-		email_list = filter(None, [cstr(email).strip() for email in
-			doc.notification_email_address.replace("\n", "").split(",")])
+		email_list = split_emails(doc.notification_email_address.replace("\n", ""))
 
 		from frappe.utils import validate_email_add
 		for email in email_list:

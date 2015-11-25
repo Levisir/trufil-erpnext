@@ -7,11 +7,14 @@ import frappe
 from frappe.utils import today
 from erpnext.hr.doctype.employee.employee import make_salary_structure
 from erpnext.hr.doctype.salary_structure.salary_structure import make_salary_slip
+from erpnext.hr.doctype.leave_application.test_leave_application import make_allocation_record
 
 class TestSalarySlip(unittest.TestCase):
 	def setUp(self):
-		frappe.db.sql("""delete from `tabLeave Application`""")
-		frappe.db.sql("""delete from `tabSalary Slip`""")
+		for dt in ["Leave Application", "Leave Allocation", "Salary Slip"]:
+			frappe.db.sql("delete from `tab%s`" % dt)
+		
+		make_allocation_record(leave_type="_Test Leave Type LWP")
 		
 		frappe.db.set_value("Holiday List", "_Test Holiday List", "is_default", 1)
 		

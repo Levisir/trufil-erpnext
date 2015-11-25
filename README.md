@@ -1,12 +1,12 @@
-# ERPNext - Open source ERP for small and medium-size business [![Build Status](https://travis-ci.org/frappe/erpnext.png)](https://travis-ci.org/frappe/erpnext)
+# ERPNext - ERP made simple
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/frappe/erpnext?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/frappe/erpnext.png)](https://travis-ci.org/frappe/erpnext) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/frappe/erpnext?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 [https://erpnext.com](https://erpnext.com)
 
 Includes: Accounting, Inventory, CRM, Sales, Purchase, Projects, HRMS. Requires MariaDB.
 
-ERPNext is built on the [Frappe](https://github.com/frappe/frappe) Framework, a full-stack web app framework in Python & Javascript.
+ERPNext is built on the [Frappe](https://github.com/frappe/frappe) Framework, a full-stack web app framework in Python & JavaScript.
 
 - [User Guide](https://manual.erpnext.com)
 - [Getting Help](http://erpnext.org/getting-help.html)
@@ -16,7 +16,7 @@ ERPNext is built on the [Frappe](https://github.com/frappe/frappe) Framework, a 
 
 ### Full Install
 
-The Easy Way install script for bench will install all dependencies (e.g. MariaDB). See https://github.com/frappe/bench
+The Easy Way: our install script for bench will install all dependencies (e.g. MariaDB). See https://github.com/frappe/bench for more details.
 
 New passwords will be created for the ERPNext "Administrator" user, the MariaDB root user, and the frappe user (the script displays the passwords and saves them to ~/frappe_passwords.txt).
 
@@ -71,6 +71,6 @@ We do not allow the use of the trademark in advertising, including AdSense/AdWor
 
 Please note that it is not the goal of this policy to limit commercial activity around ERPNext. We encourage ERPNext-based businesses, and we would love to see hundreds of them.
 
-When in doubt about your use of the ERPNext name or logo, please contact the Frappe Technologies for clarification.
+When in doubt about your use of the ERPNext name or logo, please contact Frappe Technologies for clarification.
 
-(inspired from WordPress)
+(inspired by WordPress)

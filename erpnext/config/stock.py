@@ -9,6 +9,11 @@ def get_data():
 			"items": [
 				{
 					"type": "doctype",
+					"name": "Item",
+					"description": _("All Products or Services."),
+				},
+				{
+					"type": "doctype",
 					"name": "Material Request",
 					"description": _("Requests for items."),
 				},
@@ -31,11 +36,6 @@ def get_data():
 					"type": "doctype",
 					"name": "Installation Note",
 					"description": _("Installation record for a Serial No.")
-				},
-				{
-					"type": "doctype",
-					"name": "Item",
-					"description": _("All Products or Services."),
 				},
 				{
 					"type": "doctype",
@@ -82,12 +82,7 @@ def get_data():
 					"type": "doctype",
 					"name": "Stock UOM Replace Utility",
 					"description": _("Change UOM for an Item."),
-				},
-				{
-					"type": "doctype",
-					"name": "Manage Variants",
-					"description": _("Manage Item Variants."),
-				},
+				}
 			]
 		},
 		{
@@ -270,13 +265,33 @@ def get_data():
 				},
 				{
 					"type": "help",
+					"label": _("Item Variants"),
+					"youtube_id": "OGBETlCzU5o"
+				},
+				{
+					"type": "help",
 					"label": _("Opening Stock Balance"),
 					"youtube_id": "0yPgrtfeCTs"
 				},
 				{
 					"type": "help",
-					"label": _("Item Variants"),
-					"youtube_id": "OGBETlCzU5o"
+					"label": _("Making Stock Entries"),
+					"youtube_id": "Njt107hlY3I"
+				},
+				{
+					"type": "help",
+					"label": _("Serialized Inventory"),
+					"youtube_id": "gvOVlEwFDAk"
+				},
+				{
+					"type": "help",
+					"label": _("Batch Inventory"),
+					"youtube_id": "J0QKl7ABPKM"
+				},
+				{
+					"type": "help",
+					"label": _("Managing Subcontracting"),
+					"youtube_id": "ThiMCC2DtKo"
 				},
 			]
 		}

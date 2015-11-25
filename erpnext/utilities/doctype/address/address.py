@@ -35,7 +35,7 @@ class Address(Document):
 			for fieldname in self.link_fields:
 				if self.get(fieldname):
 					if not frappe.db.sql("""select name from `tabAddress` where is_primary_address=1
-						and `%s`=%s and name!=%s""" % (fieldname, "%s", "%s"),
+						and `%s`=%s and name!=%s""" % (frappe.db.escape(fieldname), "%s", "%s"),
 						(self.get(fieldname), self.name)):
 							self.is_primary_address = 1
 					break
@@ -69,6 +69,9 @@ class Address(Document):
 				frappe.db.sql("""update `tabAddress` set `%s`=0 where `%s`=%s and name!=%s""" %
 					(is_address_type, fieldname, "%s", "%s"), (self.get(fieldname), self.name))
 				break
+
+	def get_display(self):
+		return get_address_display(self.as_dict())
 
 @frappe.whitelist()
 def get_address_display(address_dict):

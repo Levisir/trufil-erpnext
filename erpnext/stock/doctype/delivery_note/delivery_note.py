@@ -10,6 +10,8 @@ from frappe import msgprint, _
 import frappe.defaults
 from frappe.model.mapper import get_mapped_doc
 from erpnext.controllers.selling_controller import SellingController
+from frappe.desk.notifications import clear_doctype_notifications
+
 
 form_grid_templates = {
 	"items": "templates/form_grid/item_grid.html"
@@ -35,7 +37,7 @@ class DeliveryNote(SellingController):
 			'second_join_field': 'so_detail',
 			'overflow_type': 'delivery',
 			'second_source_extra_cond': """ and exists(select name from `tabSales Invoice`
-				where name=`tabSales Invoice Item`.parent and ifnull(update_stock, 0) = 1)"""
+				where name=`tabSales Invoice Item`.parent and update_stock = 1)"""
 		},
 		{
 			'source_dt': 'Delivery Note Item',
@@ -47,14 +49,30 @@ class DeliveryNote(SellingController):
 			'source_field': 'qty',
 			'percent_join_field': 'against_sales_invoice',
 			'overflow_type': 'delivery'
+		},
+		{
+			'source_dt': 'Delivery Note Item',
+			'target_dt': 'Sales Order Item',
+			'join_field': 'so_detail',
+			'target_field': 'returned_qty',
+			'target_parent_dt': 'Sales Order',
+			# 'target_parent_field': 'per_delivered',
+			# 'target_ref_field': 'qty',
+			'source_field': '-1 * qty',
+			# 'percent_join_field': 'against_sales_order',
+			# 'overflow_type': 'delivery',
+			'extra_cond': """ and exists (select name from `tabDelivery Note` where name=`tabDelivery Note Item`.parent and is_return=1)"""
 		}]
 
 	def onload(self):
-		billed_qty = frappe.db.sql("""select sum(ifnull(qty, 0)) from `tabSales Invoice Item`
+		billed_qty = frappe.db.sql("""select sum(qty) from `tabSales Invoice Item`
 			where docstatus=1 and delivery_note=%s""", self.name)
 		if billed_qty:
 			total_qty = sum((item.qty for item in self.get("items")))
-			self.get("__onload").billing_complete = (billed_qty[0][0] == total_qty)
+			self.set_onload("billing_complete", (billed_qty[0][0] == total_qty))
+			
+		self.set_onload("has_return_entry", len(frappe.db.exists({"doctype": "Delivery Note", 
+			"is_return": 1, "return_against": self.name, "docstatus": 1})))
 
 	def before_print(self):
 		def toggle_print_hide(meta, fieldname):
@@ -66,7 +84,7 @@ class DeliveryNote(SellingController):
 
 		item_meta = frappe.get_meta("Delivery Note Item")
 		print_hide_fields = {
-			"parent": ["grand_total", "rounded_total", "in_words", "currency", "net_total"],
+			"parent": ["grand_total", "rounded_total", "in_words", "currency", "total", "taxes"],
 			"items": ["rate", "amount", "price_list_rate", "discount_percentage"]
 		}
 
@@ -83,7 +101,7 @@ class DeliveryNote(SellingController):
 
 	def so_required(self):
 		"""check in manage account if sales order required or not"""
-		if not self.is_return and frappe.db.get_value("Selling Settings", None, 'so_required') == 'Yes':
+		if frappe.db.get_value("Selling Settings", None, 'so_required') == 'Yes':
 			 for d in self.get('items'):
 				 if not d.against_sales_order:
 					 frappe.throw(_("Sales Order required for Item {0}").format(d.item_code))
@@ -93,14 +111,14 @@ class DeliveryNote(SellingController):
 		self.set_status()
 		self.so_required()
 		self.validate_proj_cust()
-		self.check_stop_sales_order("against_sales_order")
+		self.check_stop_or_close_sales_order("against_sales_order")
 		self.validate_for_items()
 		self.validate_warehouse()
 		self.validate_uom_is_integer("stock_uom", "qty")
 		self.validate_with_previous_doc()
 
 		from erpnext.stock.doctype.packed_item.packed_item import make_packing_list
-		make_packing_list(self, 'items')
+		make_packing_list(self)
 
 		self.update_current_stock()
 
@@ -118,7 +136,7 @@ class DeliveryNote(SellingController):
 					},
 				})
 
-		if cint(frappe.db.get_single_value('Selling Settings', 'maintain_same_sales_rate')):
+		if cint(frappe.db.get_single_value('Selling Settings', 'maintain_same_sales_rate')) and not self.is_return:
 			self.validate_rate_with_reference_doc([["Sales Order", "sales_order", "so_detail"],
 				["Sales Invoice", "sales_invoice", "si_detail"]])
 
@@ -133,6 +151,9 @@ class DeliveryNote(SellingController):
 
 	def validate_for_items(self):
 		check_list, chk_dupl_itm = [], []
+		if cint(frappe.db.get_single_value("Selling Settings", "allow_multiple_items")):
+			return
+
 		for d in self.get('items'):
 			e = [d.item_code, d.description, d.warehouse, d.against_sales_order or d.against_sales_invoice, d.batch_no or '']
 			f = [d.item_code, d.description, d.against_sales_order or d.against_sales_invoice]
@@ -149,6 +170,8 @@ class DeliveryNote(SellingController):
 					chk_dupl_itm.append(f)
 
 	def validate_warehouse(self):
+		super(DeliveryNote, self).validate_warehouse()
+		
 		for d in self.get_item_list():
 			if frappe.db.get_value("Item", d['item_code'], "is_stock_item") == 1:
 				if not d['warehouse']:
@@ -174,10 +197,10 @@ class DeliveryNote(SellingController):
 		# Check for Approving Authority
 		frappe.get_doc('Authorization Control').validate_approving_authority(self.doctype, self.company, self.base_grand_total, self)
 
-		if not self.is_return:
-			# update delivered qty in sales order
-			self.update_prevdoc_status()
+		# update delivered qty in sales order
+		self.update_prevdoc_status()
 
+		if not self.is_return:
 			self.check_credit_limit()
 
 		self.update_stock_ledger()
@@ -187,11 +210,10 @@ class DeliveryNote(SellingController):
 
 
 	def on_cancel(self):
-		self.check_stop_sales_order("against_sales_order")
+		self.check_stop_or_close_sales_order("against_sales_order")
 		self.check_next_docstatus()
 
-		if not self.is_return:
-			self.update_prevdoc_status()
+		self.update_prevdoc_status()
 
 		self.update_stock_ledger()
 
@@ -199,6 +221,17 @@ class DeliveryNote(SellingController):
 		self.cancel_packing_slips()
 
 		self.make_gl_entries_on_cancel()
+
+	def check_credit_limit(self):
+		from erpnext.selling.doctype.customer.customer import check_credit_limit
+
+		validate_against_credit_limit = False
+		for d in self.get("items"):
+			if not (d.against_sales_order or d.against_sales_invoice):
+				validate_against_credit_limit = True
+				break
+		if validate_against_credit_limit:
+			check_credit_limit(self.customer, self.company)
 
 	def validate_packed_qty(self):
 		"""
@@ -242,24 +275,10 @@ class DeliveryNote(SellingController):
 				ps.cancel()
 			frappe.msgprint(_("Packing Slip(s) cancelled"))
 
-
-	def update_stock_ledger(self):
-		sl_entries = []
-		for d in self.get_item_list():
-			if frappe.db.get_value("Item", d.item_code, "is_stock_item") == 1 \
-					and d.warehouse and flt(d['qty']):
-				self.update_reserved_qty(d)
-				
-				incoming_rate = 0
-				if cint(self.is_return) and self.return_against and self.docstatus==1:
-					incoming_rate = self.get_incoming_rate_for_sales_return(d.item_code, self.return_against)
-					
-				sl_entries.append(self.get_sl_entries(d, {
-					"actual_qty": -1*flt(d['qty']),
-					"incoming_rate": incoming_rate
-				}))
-
-		self.make_sl_entries(sl_entries)
+	def update_status(self, status):
+		self.set_status(update=True, status=status)
+		self.notify_update()
+		clear_doctype_notifications(self)
 
 def get_list_context(context=None):
 	from erpnext.controllers.website_list_for_contact import get_list_context
@@ -374,8 +393,14 @@ def make_packing_slip(source_name, target_doc=None):
 
 	return doclist
 
-	
+
 @frappe.whitelist()
 def make_sales_return(source_name, target_doc=None):
 	from erpnext.controllers.sales_and_purchase_return import make_return_doc
 	return make_return_doc("Delivery Note", source_name, target_doc)
+
+
+@frappe.whitelist()
+def update_delivery_note_status(docname, status):
+	dn = frappe.get_doc("Delivery Note", docname)
+	dn.update_status(status)

@@ -21,16 +21,15 @@ erpnext.accounts.PurchaseInvoice = erpnext.buying.BuyingController.extend({
 
 		// Show / Hide button
 		this.show_general_ledger();
-		
+
 		if(!doc.is_return) {
 			if(doc.docstatus==1) {
 				if(doc.outstanding_amount > 0) {
-					this.frm.add_custom_button(__('Make Payment Entry'), this.make_bank_entry);
+					this.frm.add_custom_button(__('Payment'), this.make_bank_entry).addClass("btn-primary");
 				}
-				
-				cur_frm.add_custom_button(__('Make Debit Note'), this.make_debit_note);
+				cur_frm.add_custom_button(__('Debit Note'), this.make_debit_note);
 			}
-			
+
 			if(doc.docstatus===0) {
 				cur_frm.add_custom_button(__('From Purchase Order'), function() {
 					frappe.model.map_current_doc({
@@ -39,7 +38,7 @@ erpnext.accounts.PurchaseInvoice = erpnext.buying.BuyingController.extend({
 						get_query_filters: {
 							supplier: cur_frm.doc.supplier || undefined,
 							docstatus: 1,
-							status: ["!=", "Stopped"],
+							status: ["not in", ["Stopped", "Closed"]],
 							per_billed: ["<", 99.99],
 							company: cur_frm.doc.company
 						}
@@ -53,6 +52,7 @@ erpnext.accounts.PurchaseInvoice = erpnext.buying.BuyingController.extend({
 						get_query_filters: {
 							supplier: cur_frm.doc.supplier || undefined,
 							docstatus: 1,
+							status: ["!=", "Closed"],
 							company: cur_frm.doc.company
 						}
 					})
@@ -76,8 +76,29 @@ erpnext.accounts.PurchaseInvoice = erpnext.buying.BuyingController.extend({
 			me.apply_pricing_rule();
 		})
 	},
+	
+	credit_to: function() {
+		var me = this;
+		if(this.frm.doc.credit_to) {
+			me.frm.call({
+				method: "frappe.client.get_value",
+				args: {
+					doctype: "Account",
+					fieldname: "account_currency",
+					filters: { name: me.frm.doc.credit_to },
+				},
+				callback: function(r, rt) {
+					if(r.message) {
+						me.frm.set_value("party_account_currency", r.message.account_currency);
+						me.set_dynamic_labels();
+					}
+				}
+			});
+		}
+	},
 
 	write_off_amount: function() {
+		this.set_in_company_currency(this.frm.doc, ["write_off_amount"]);
 		this.calculate_outstanding_amount();
 		this.frm.refresh_fields();
 	},
@@ -102,7 +123,7 @@ erpnext.accounts.PurchaseInvoice = erpnext.buying.BuyingController.extend({
 			if(row.purchase_receipt) frappe.model.clear_doc("Purchase Receipt", row.purchase_receipt)
 		})
 	},
-	
+
 	make_debit_note: function() {
 		frappe.model.open_mapped_doc({
 			method: "erpnext.accounts.doctype.purchase_invoice.purchase_invoice.make_debit_note",
@@ -115,9 +136,10 @@ cur_frm.script_manager.make(erpnext.accounts.PurchaseInvoice);
 
 cur_frm.cscript.make_bank_entry = function() {
 	return frappe.call({
-		method: "erpnext.accounts.doctype.journal_entry.journal_entry.get_payment_entry_from_purchase_invoice",
+		method: "erpnext.accounts.doctype.journal_entry.journal_entry.get_payment_entry_against_invoice",
 		args: {
-			"purchase_invoice": cur_frm.doc.name,
+			"dt": "Purchase Invoice",
+			"dn": cur_frm.doc.name
 		},
 		callback: function(r) {
 			var doclist = frappe.model.sync(r.message);
@@ -149,12 +171,22 @@ cur_frm.fields_dict['items'].grid.get_field("item_code").get_query = function(do
 }
 
 cur_frm.fields_dict['credit_to'].get_query = function(doc) {
-	return{
-		filters:{
-			'account_type': 'Payable',
-			'root_type': 'Liability',
-			'is_group': 0,
-			'company': doc.company
+	// filter on Account
+	if (doc.supplier) {
+		return {
+			filters: {
+				'account_type': 'Payable',
+				'is_group': 0,
+				'company': doc.company
+			}
+		}
+	} else {
+		return {
+			filters: {
+				'report_type': 'Balance Sheet',
+				'is_group': 0,
+				'company': doc.company
+			}
 		}
 	}
 }

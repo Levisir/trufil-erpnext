@@ -10,6 +10,7 @@ from frappe.model.naming import make_autoname
 from frappe import msgprint, _
 from erpnext.setup.utils import get_company_currency
 from erpnext.hr.utils import set_employee_name
+from erpnext.hr.doctype.process_payroll.process_payroll import get_month_details
 
 from erpnext.utilities.transaction_base import TransactionBase
 
@@ -22,19 +23,27 @@ class SalarySlip(TransactionBase):
 			self.get_leave_details()
 			struct = self.check_sal_struct()
 			if struct:
+				self.set("earnings", [])
+				self.set("deduction", [])
 				self.pull_sal_struct(struct)
 
 	def check_sal_struct(self):
+		m = get_month_details(self.fiscal_year, self.month)
 		struct = frappe.db.sql("""select name from `tabSalary Structure`
-			where employee=%s and is_active = 'Yes'""", self.employee)
+			where employee=%s and is_active = 'Yes'
+			and from_date <= %s and (to_date is null or to_date >= %s)""",
+			(self.employee, m.month_start_date, m.month_end_date))
+
 		if not struct:
-			msgprint(_("Please create Salary Structure for employee {0}").format(self.employee))
+			msgprint(_("No active Salary Structure found for employee {0} and the month")
+				.format(self.employee))
 			self.employee = None
+
 		return struct and struct[0][0] or ''
 
 	def pull_sal_struct(self, struct):
 		from erpnext.hr.doctype.salary_structure.salary_structure import make_salary_slip
-		self.update(make_salary_slip(struct, self).as_dict())
+		make_salary_slip(struct, self)
 
 	def pull_emp_details(self):
 		emp = frappe.db.get_value("Employee", self.employee,
@@ -49,7 +58,7 @@ class SalarySlip(TransactionBase):
 		if not self.month:
 			self.month = "%02d" % getdate(nowdate()).month
 
-		m = frappe.get_doc('Process Payroll').get_month_details(self.fiscal_year, self.month)
+		m = get_month_details(self.fiscal_year, self.month)
 		holidays = self.get_holidays_for_employee(m)
 
 		if not cint(frappe.db.get_value("HR Settings", "HR Settings",
@@ -96,7 +105,7 @@ class SalarySlip(TransactionBase):
 		if not holidays:
 			holidays = frappe.db.sql("""select t1.holiday_date
 				from `tabHoliday` t1, `tabHoliday List` t2
-				where t1.parent = t2.name and ifnull(t2.is_default, 0) = 1
+				where t1.parent = t2.name and t2.is_default = 1
 				and t2.fiscal_year = %s
 				and t1.holiday_date between %s and %s""", (self.fiscal_year,
 					m['month_start_date'], m['month_end_date']))
@@ -112,7 +121,7 @@ class SalarySlip(TransactionBase):
 					select t1.name, t1.half_day
 					from `tabLeave Application` t1, `tabLeave Type` t2
 					where t2.name = t1.leave_type
-					and ifnull(t2.is_lwp, 0) = 1
+					and t2.is_lwp = 1
 					and t1.docstatus = 1
 					and t1.employee = %s
 					and %s between from_date and to_date
@@ -152,8 +161,8 @@ class SalarySlip(TransactionBase):
 		self.gross_pay = flt(self.arrear_amount) + flt(self.leave_encashment_amount)
 		for d in self.get("earnings"):
 			if cint(d.e_depends_on_lwp) == 1:
-				d.e_modified_amount = rounded(flt(d.e_amount) * flt(self.payment_days)
-					/ cint(self.total_days_in_month), 2)
+				d.e_modified_amount = rounded((flt(d.e_amount) * flt(self.payment_days)
+					/ cint(self.total_days_in_month)), self.precision("e_modified_amount", "earnings"))
 			elif not self.payment_days:
 				d.e_modified_amount = 0
 			elif not d.e_modified_amount:
@@ -164,8 +173,8 @@ class SalarySlip(TransactionBase):
 		self.total_deduction = 0
 		for d in self.get('deductions'):
 			if cint(d.d_depends_on_lwp) == 1:
-				d.d_modified_amount = rounded(flt(d.d_amount) * flt(self.payment_days)
-					/ cint(self.total_days_in_month), 2)
+				d.d_modified_amount = rounded((flt(d.d_amount) * flt(self.payment_days)
+					/ cint(self.total_days_in_month)), self.precision("d_modified_amount", "deductions"))
 			elif not self.payment_days:
 				d.d_modified_amount = 0
 			elif not d.d_modified_amount:
@@ -174,10 +183,13 @@ class SalarySlip(TransactionBase):
 			self.total_deduction += flt(d.d_modified_amount)
 
 	def calculate_net_pay(self):
+		disable_rounded_total = cint(frappe.db.get_value("Global Defaults", None, "disable_rounded_total"))
+
 		self.calculate_earning_total()
 		self.calculate_ded_total()
 		self.net_pay = flt(self.gross_pay) - flt(self.total_deduction)
-		self.rounded_total = rounded(self.net_pay)
+		self.rounded_total = rounded(self.net_pay,
+			self.precision("net_pay") if disable_rounded_total else 0)
 
 	def on_submit(self):
 		if(self.email_check == 1):

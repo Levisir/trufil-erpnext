@@ -59,7 +59,7 @@ class PricingRule(Document):
 					self.set(f, None)
 
 	def validate_price_or_discount(self):
-		for field in ["Price", "Discount Percentage"]:
+		for field in ["Price"]:
 			if flt(self.get(frappe.scrub(field))) < 0:
 				throw(_("{0} can not be negative").format(field))
 
@@ -130,7 +130,11 @@ def get_pricing_rule_for_item(args):
 		return item_details
 
 	if not (args.item_group and args.brand):
-		args.item_group, args.brand = frappe.db.get_value("Item", args.item_code, ["item_group", "brand"])
+		try:
+			args.item_group, args.brand = frappe.db.get_value("Item", args.item_code, ["item_group", "brand"])
+		except TypeError:
+			# invalid item_code
+			return item_details
 		if not args.item_group:
 			frappe.throw(_("Item Group not mentioned in item master for item {0}").format(args.item_code))
 
@@ -147,6 +151,7 @@ def get_pricing_rule_for_item(args):
 
 	if pricing_rule:
 		item_details.pricing_rule = pricing_rule.name
+		item_details.pricing_rule_for = pricing_rule.price_or_discount
 		if pricing_rule.price_or_discount == "Price":
 			item_details.update({
 				"price_list_rate": pricing_rule.price/flt(args.conversion_rate) \
@@ -163,14 +168,18 @@ def get_pricing_rules(args):
 		field = frappe.scrub(parenttype)
 		condition = ""
 		if args.get(field):
-			lft, rgt = frappe.db.get_value(parenttype, args[field], ["lft", "rgt"])
+			try:
+				lft, rgt = frappe.db.get_value(parenttype, args[field], ["lft", "rgt"])
+			except TypeError:
+				frappe.throw(_("Invalid {0}").format(args[field]))
+
 			parent_groups = frappe.db.sql_list("""select name from `tab%s`
 				where lft<=%s and rgt>=%s""" % (parenttype, '%s', '%s'), (lft, rgt))
 
 			if parent_groups:
 				if allow_blank: parent_groups.append('')
 				condition = " ifnull("+field+", '') in ('" + \
-					"', '".join([d.replace("'", "\\'").replace('"', '\\"') for d in parent_groups])+"')"
+					"', '".join([frappe.db.escape(d) for d in parent_groups])+"')"
 		return condition
 
 
@@ -197,8 +206,8 @@ def get_pricing_rules(args):
 
 	return frappe.db.sql("""select * from `tabPricing Rule`
 		where (item_code=%(item_code)s {item_group_condition} or brand=%(brand)s)
-			and docstatus < 2 and ifnull(disable, 0) = 0
-			and ifnull({transaction_type}, 0) = 1 {conditions}
+			and docstatus < 2 and disable = 0
+			and {transaction_type} = 1 {conditions}
 		order by priority desc, name desc""".format(
 			item_group_condition=item_group_condition,
 			transaction_type=args.transaction_type, conditions=conditions), args, as_dict=1)

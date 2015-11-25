@@ -12,6 +12,7 @@ cur_frm.cscript.refresh = function(doc, dt, dn) {
 
 	if(doc.__islocal){
     	hide_field(['address_html','contact_html']);
+		erpnext.utils.clear_address_and_contact(cur_frm);
 	}
 	else{
 	  	unhide_field(['address_html','contact_html']);
@@ -39,14 +40,12 @@ cur_frm.cscript.make_dashboard = function(doc) {
 		},
 		callback: function(r) {
 			if (in_list(user_roles, "Accounts User") || in_list(user_roles, "Accounts Manager")) {
-				if(r.message["company_currency"].length == 1) {
-					cur_frm.dashboard.set_headline(
-						__("Total Billing This Year: ") + "<b>"
-						+ format_currency(r.message.billing_this_year, r.message.company_currency[0])
-						+ '</b> / <span class="text-muted">' + __("Total Unpaid") + ": <b>"
-						+ format_currency(r.message.total_unpaid, r.message.company_currency[0])
-						+ '</b></span>');
-				}
+				cur_frm.dashboard.set_headline(
+					__("Total Billing This Year: ") + "<b>"
+					+ format_currency(r.message.billing_this_year, cur_frm.doc.party_account_currency)
+					+ '</b> / <span class="text-muted">' + __("Total Unpaid") + ": <b>"
+					+ format_currency(r.message.total_unpaid, cur_frm.doc.party_account_currency)
+					+ '</b></span>');
 			}
 			cur_frm.dashboard.set_badge_count(r.message);
 		}
