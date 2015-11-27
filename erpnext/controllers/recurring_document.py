@@ -4,7 +4,7 @@ import frappe.utils
 import frappe.defaults
 
 from frappe.utils import add_days, cint, cstr, date_diff, flt, getdate, nowdate, \
-	get_first_day, get_last_day, comma_and, split_emails
+	get_first_day, get_last_day, comma_and
 from frappe.model.naming import make_autoname
 
 from frappe import _, msgprint, throw

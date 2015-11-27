@@ -572,7 +572,9 @@ $.extend(erpnext.wiz, {
 							placeholder:__("Customer Name")},
 						{fieldtype:"Column Break"},
 						{fieldtype:"Data", fieldname:"customer_contact_" + i,
-							label:__("Contact Name") + " " + i, placeholder:__("Contact Name")}
+							label:__("Contact Name") + " " + i, placeholder:__("Contact Name")},
+						{fieldtype:"Data", fieldname:"customer_code" + i,
+							label:__("customer_code") + " " + i, placeholder:__("customer_code")}
 					])
 				}
 			},
