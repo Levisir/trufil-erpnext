@@ -373,6 +373,7 @@ def create_customers(args):
 			try:
 				frappe.get_doc({
 					"doctype":"Customer",
+					"customer_code": "aa",
 					"customer_name": customer,
 					"customer_type": "Company",
 					"customer_group": _("Commercial"),
