@@ -22,6 +22,7 @@ def get_data():
 					"description": _("Potential opportunities for selling."),
 				},
 				{
+					"label": _("Work Order"),
 					"type": "doctype",
 					"name": "Order Register",
 					"description": _("Customer orders list."),
