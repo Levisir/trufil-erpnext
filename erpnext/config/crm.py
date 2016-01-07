@@ -22,6 +22,11 @@ def get_data():
 					"description": _("Potential opportunities for selling."),
 				},
 				{
+					"type": "doctype",
+					"name": "Contract",
+					"description": _("All Contract related information."),
+				},
+				{
 					"label": _("Work Order"),
 					"type": "doctype",
 					"name": "Order Register",
