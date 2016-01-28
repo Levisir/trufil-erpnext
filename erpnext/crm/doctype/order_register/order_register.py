@@ -5,9 +5,17 @@
 from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
+from frappe.utils import flt, getdate, nowdate
+
 
 class OrderRegister(Document):
-	pass
+	def validate(self):
+		if self.order_date and self.contract:
+			contract_doc=frappe.get_doc("Contract",self.contract)
+			if getdate(self.order_date) < getdate(contract_doc.contract_start_date):
+				frappe.throw("Work Order Date < Contract Start Date")
+			# work_order_doc.quantity_received=sample_count[0][0]
+			# work_order_doc.save()
 
 #Getting contact details after selecting contact name
 @frappe.whitelist()
