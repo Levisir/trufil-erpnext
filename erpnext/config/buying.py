@@ -19,6 +19,11 @@ def get_data():
 				},
 				{
 					"type": "doctype",
+					"name": "Request For Quote",
+					"description": _("Request For Quote."),
+				},
+				{
+					"type": "doctype",
 					"name": "Supplier Quotation",
 					"description": _("Quotations received from Suppliers."),
 				},

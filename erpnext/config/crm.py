@@ -23,6 +23,12 @@ def get_data():
 				},
 				{
 					"type": "doctype",
+					"name": "Contract",
+					"description": _("All Contract related information."),
+				},
+				{
+					"label": _("Work Order"),
+					"type": "doctype",
 					"name": "Order Register",
 					"description": _("Customer orders list."),
 				},

@@ -4,6 +4,24 @@
 cur_frm.add_fetch('customer','customer_name','customer_name');
 cur_frm.add_fetch('customer','customer_code','customer_code');
 
+//fetch contract details
+cur_frm.add_fetch('contract','administrative_contact','administrative_contact');
+cur_frm.add_fetch('contract','administrative_contact_details','administrative_contact_details');
+cur_frm.add_fetch('contract','billing_contact','billing_contact');
+cur_frm.add_fetch('contract','billing_contact_details','billing_contact_details');
+cur_frm.add_fetch('contract','admin_address','admin_address');
+cur_frm.add_fetch('contract','admin_address_details','admin_address_details');
+
+cur_frm.add_fetch('contract','contract_value','contract_value');
+cur_frm.add_fetch('contract','contract_value_as_on_today','contract_value_as_on_today');
+cur_frm.add_fetch('contract','contract_quantity','contract_quantity');
+cur_frm.add_fetch('contract','contact_quantity_as_on_today','contact_quantity_as_on_today');
+cur_frm.add_fetch('contract','contract_start_date','contract_start_date');
+cur_frm.add_fetch('contract','contract_expiry_date','contract_expiry_date');
+cur_frm.add_fetch('contract','customer','customer');
+cur_frm.add_fetch('contract','customer_code','customer_code');
+cur_frm.add_fetch('contract','customer_name','customer_name');
+/*cur_frm.add_fetch("sales_order","total_qty","total_samples")*/
 // Method to get address details
 cur_frm.cscript.admin_address = function(doc,cdt,cdn){
 
@@ -80,6 +98,7 @@ cur_frm.fields_dict['admin_address'].get_query = function(doc) {
 	}
 }
 
+
 //Validation
 cur_frm.cscript.order_expiry_date = function(doc,cdt,cdn){
 	if(doc.order_expiry_date && doc.order_date){
@@ -99,3 +118,37 @@ cur_frm.cscript.order_closing_date = function(doc,cdt,cdn){
 			msgprint("Order Closing Date must be greater than order date")
 	}
 }
+frappe.ui.form.on("Order Register", "refresh", function(frm,doctype,name) {
+
+		if (frm.doc.docstatus===0) {
+			cur_frm.add_custom_button(__('From Contract'),
+				function() {
+					frappe.model.map_current_doc({
+						method: "sample_register.sample_register.doctype.contract.contract.make_work_order",
+						source_doctype: "Contract",
+					})
+				}, "icon-download", "btn-default");
+		}
+});
+
+cur_frm.cscript.custom_onload = function(doc, cdt, cdn) {
+		cur_frm.fields_dict['sales_order'].get_query = function(doc) {
+			return{
+				filters:{'customer':  doc.customer,
+						  'docstatus': 1
+						}
+			}
+		}
+	}
+
+/*cur_frm.cscript.sales_order = function(doc,cdt,cdn){
+	frappe.call({
+		method: "erpnext.crm.order_register.order_register.get_wo_info",
+		args: {
+			sales_order: doc.sales_order
+		},
+		callback: function(r) {
+
+		}
+	})
+}*/
