@@ -34,4 +34,7 @@ def get_contact_details(contact):
 	}
 	return out
 
+# @frappe.whitelist()
+# def get_wo_info(sales_order):
+
 

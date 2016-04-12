@@ -21,7 +21,7 @@ cur_frm.add_fetch('contract','contract_expiry_date','contract_expiry_date');
 cur_frm.add_fetch('contract','customer','customer');
 cur_frm.add_fetch('contract','customer_code','customer_code');
 cur_frm.add_fetch('contract','customer_name','customer_name');
-
+/*cur_frm.add_fetch("sales_order","total_qty","total_samples")*/
 // Method to get address details
 cur_frm.cscript.admin_address = function(doc,cdt,cdn){
 
@@ -130,3 +130,25 @@ frappe.ui.form.on("Order Register", "refresh", function(frm,doctype,name) {
 				}, "icon-download", "btn-default");
 		}
 });
+
+cur_frm.cscript.custom_onload = function(doc, cdt, cdn) {
+		cur_frm.fields_dict['sales_order'].get_query = function(doc) {
+			return{
+				filters:{'customer':  doc.customer,
+						  'docstatus': 1
+						}
+			}
+		}
+	}
+
+/*cur_frm.cscript.sales_order = function(doc,cdt,cdn){
+	frappe.call({
+		method: "erpnext.crm.order_register.order_register.get_wo_info",
+		args: {
+			sales_order: doc.sales_order
+		},
+		callback: function(r) {
+
+		}
+	})
+}*/
