@@ -3,6 +3,7 @@
 
 
 {% include 'selling/sales_common.js' %}
+{% include "sample_register/custom_js_methods.js" %}
 
 erpnext.selling.QuotationController = erpnext.selling.SellingController.extend({
 	onload: function(doc, dt, dn) {
