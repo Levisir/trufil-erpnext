@@ -118,8 +118,8 @@ cur_frm.cscript.order_closing_date = function(doc,cdt,cdn){
 			msgprint("Order Closing Date must be greater than order date")
 	}
 }
-frappe.ui.form.on("Order Register", "refresh", function(frm,doctype,name) {
-
+frappe.ui.form.on("Order Register", {
+	refresh: function(frm,doctype,name) {
 		if (frm.doc.docstatus===0) {
 			cur_frm.add_custom_button(__('From Contract'),
 				function() {
@@ -128,7 +128,43 @@ frappe.ui.form.on("Order Register", "refresh", function(frm,doctype,name) {
 						source_doctype: "Contract",
 					})
 				}, "icon-download", "btn-default");
+			
+			cur_frm.add_custom_button(__("From Sales Order"),
+			function() {
+				frappe.model.map_current_doc({
+					method: "sample_register.custom_py_methods.make_order_register",
+					source_doctype: "Sales Order",
+					get_query_filters: {
+						docstatus: 1,
+						status: ["not in", ["Stopped", "Closed"]],
+						customer: cur_frm.doc.customer || undefined,
+						company: cur_frm.doc.company
+					}
+				})
+			}, "icon-download", "btn-default")	
 		}
+
+		if(frm.doc.docstatus == 1) {
+		cur_frm.add_custom_button(__("Create Sample Entry"),
+			function() {
+				frappe.model.open_mapped_doc({
+						method: "erpnext.crm.doctype.order_register.order_register.create_sample_entry",
+						frm: cur_frm
+				})
+			})
+		}
+
+		if(frm.doc.customer){
+			frm.call({
+				method: "frappe.client.get_value",
+				args: {
+					doctype: "Customer",
+					fieldname: "customer_code",
+					filters: { name: frm.doc.customer },
+				}
+			});
+		}
+	},
 });
 
 cur_frm.cscript.custom_onload = function(doc, cdt, cdn) {
@@ -141,14 +177,16 @@ cur_frm.cscript.custom_onload = function(doc, cdt, cdn) {
 		}
 	}
 
-/*cur_frm.cscript.sales_order = function(doc,cdt,cdn){
+cur_frm.cscript.sales_order = function(doc,cdt,cdn){
 	frappe.call({
-		method: "erpnext.crm.order_register.order_register.get_wo_info",
+		method: "erpnext.crm.doctype.order_register.order_register.get_wo_info",
 		args: {
 			sales_order: doc.sales_order
 		},
 		callback: function(r) {
-
+			if(r.message) {
+				cur_frm.set_value("total_samples", r.message)
+			}
 		}
 	})
-}*/
+}

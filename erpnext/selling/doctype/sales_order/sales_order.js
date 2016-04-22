@@ -43,19 +43,19 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 				}
 
 				// material request
-				if(!doc.order_type || ["Sales", "Shopping Cart"].indexOf(doc.order_type)!==-1
+				/*if(!doc.order_type || ["Sales", "Shopping Cart"].indexOf(doc.order_type)!==-1
 					&& flt(doc.per_delivered, 2) < 100) {
 						cur_frm.add_custom_button(__('Material Request'), this.make_material_request);
-				}
+				}*/
 
 				// make purchase order
 				if(flt(doc.per_delivered, 2) < 100 && allow_purchase) {
 					cur_frm.add_custom_button(__('Purchase Order'), cur_frm.cscript.make_purchase_order);
 				}
 
-				if(flt(doc.per_billed)==0) {
+				/*if(flt(doc.per_billed)==0) {
 					cur_frm.add_custom_button(__('Payment'), cur_frm.cscript.make_bank_entry);
-				}
+				}*/
 
 				if (this.frm.has_perm("submit")) {
 					// stop
@@ -73,7 +73,7 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 					cur_frm.add_custom_button(__('Maint. Schedule'), this.make_maintenance_schedule);
 				}
 
-				// delivery note
+				/*// delivery note
 				if(flt(doc.per_delivered, 2) < 100 && ["Sales", "Shopping Cart"].indexOf(doc.order_type)!==-1 && allow_delivery) {
 					cur_frm.add_custom_button(__('Delivery'), this.make_delivery_note).addClass("btn-primary");
 				}
@@ -81,7 +81,7 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 				// sales invoice
 				if(flt(doc.per_billed, 2) < 100) {
 					cur_frm.add_custom_button(__('Invoice'), this.make_sales_invoice).addClass("btn-primary");
-				}
+				}*/
 
 
 			} else {
