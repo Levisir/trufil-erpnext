@@ -112,9 +112,9 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 		this.order_type(doc);
 	},
 
-	order_type: function() {
+	/*order_type: function() {
 		this.frm.toggle_reqd("delivery_date", this.frm.doc.order_type == "Sales");
-	},
+	},*/
 
 	tc_name: function() {
 		this.get_terms();
