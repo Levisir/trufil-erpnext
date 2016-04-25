@@ -5,8 +5,9 @@
 from __future__ import unicode_literals
 import frappe
 from frappe.model.document import Document
-from frappe.utils import flt, getdate, nowdate
 from frappe.model.mapper import get_mapped_doc
+from frappe.utils import flt, getdate, nowdate,now_datetime
+from frappe.model.naming import make_autoname
 
 
 class OrderRegister(Document):
@@ -17,6 +18,10 @@ class OrderRegister(Document):
 				frappe.throw("Work Order Date < Contract Start Date")
 			# work_order_doc.quantity_received=sample_count[0][0]
 			# work_order_doc.save()
+
+	def autoname(self):
+		year = int(now_datetime().strftime("%Y"))
+		self.name = make_autoname("TF-WO-"+str(year)+"-"+'.#####')
 
 #Getting contact details after selecting contact name
 @frappe.whitelist()
@@ -55,7 +60,8 @@ def get_wo_info(sales_order):
 			"""%(sales_order)
 	so_total_qty = frappe.db.sql(qty_query, as_list=1)
 	existing_sample_qty = frappe.db.sql(query, as_list=1)
-	return (flt(so_total_qty[0][0]) - existing_sample_qty[0][0])
+	if so_total_qty and existing_sample_qty:
+		return (flt(so_total_qty[0][0]) - existing_sample_qty[0][0])
 
 @frappe.whitelist()
 def check_total_samples(doc, method):
@@ -77,9 +83,9 @@ def check_total_samples(doc, method):
 			"""%(doc.sales_order)
 	so_total_qty = frappe.db.sql(qty_query, as_list=1)
 	existing_sample_qty = frappe.db.sql(query, as_list=1)
-
-	if(flt(so_total_qty[0][0])) < (existing_sample_qty[0][0] + doc.total_samples):
-		frappe.throw("Total Samples exceed's than {0}'s Total Qty".format(doc.sales_order))
+	if so_total_qty and existing_sample_qty:
+		if(flt(so_total_qty[0][0])) < (existing_sample_qty[0][0] + doc.total_samples):
+			frappe.throw("Total Samples exceed's than {0}'s Total Qty".format(doc.sales_order))
 
 @frappe.whitelist()
 def create_sample_entry(source_name, target_doc=None):
