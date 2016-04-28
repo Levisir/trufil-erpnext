@@ -68,10 +68,10 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 				}
 
 				// maintenance
-				if(flt(doc.per_delivered, 2) < 100 && ["Sales", "Shopping Cart"].indexOf(doc.order_type)===-1) {
+				/*if(flt(doc.per_delivered, 2) < 100 && ["Sales", "Shopping Cart"].indexOf(doc.order_type)===-1) {
 					cur_frm.add_custom_button(__('Maint. Visit'), this.make_maintenance_visit);
 					cur_frm.add_custom_button(__('Maint. Schedule'), this.make_maintenance_schedule);
-				}
+				}*/
 
 				/*// delivery note
 				if(flt(doc.per_delivered, 2) < 100 && ["Sales", "Shopping Cart"].indexOf(doc.order_type)!==-1 && allow_delivery) {
@@ -109,7 +109,7 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 				});
 		}
 
-		this.order_type(doc);
+		/*this.order_type(doc);*/
 	},
 
 	/*order_type: function() {

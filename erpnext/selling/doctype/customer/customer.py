@@ -155,22 +155,22 @@ def get_dashboard_info(customer):
 
 def get_customer_list(doctype, txt, searchfield, start, page_len, filters):
 	if frappe.db.get_default("cust_master_name") == "Customer Name":
-		fields = ["name", "customer_group", "territory"]
+		fields = ["name", "customer_group", "territory", "customer_code"]
 	else:
-		fields = ["name", "customer_name", "customer_group", "territory"]
+		fields = ["name", "customer_name", "customer_group", "territory","customer_code"]
 
 	match_conditions = build_match_conditions("Customer")
 	match_conditions = "and {}".format(match_conditions) if match_conditions else ""
 
 	return frappe.db.sql("""select %s from `tabCustomer` where docstatus < 2
-		and (%s like %s or customer_name like %s)
+		and (%s like %s or customer_name like %s or customer_code like %s)
 		{match_conditions}
 		order by
 		case when name like %s then 0 else 1 end,
 		case when customer_name like %s then 0 else 1 end,
 		name, customer_name limit %s, %s""".format(match_conditions=match_conditions) %
-		(", ".join(fields), searchfield, "%s", "%s", "%s", "%s", "%s", "%s"),
-		("%%%s%%" % txt, "%%%s%%" % txt, "%%%s%%" % txt, "%%%s%%" % txt, start, page_len))
+		(", ".join(fields), searchfield, "%s", "%s", "%s","%s", "%s", "%s", "%s"),
+		("%%%s%%" % txt, "%%%s%%" % txt, "%%%s%%" % txt, "%%%s%%" % txt, "%%%s%%" % txt, start, page_len))
 
 
 def check_credit_limit(customer, company):

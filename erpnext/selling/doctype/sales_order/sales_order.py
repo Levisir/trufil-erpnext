@@ -5,11 +5,12 @@ from __future__ import unicode_literals
 import frappe
 import json
 import frappe.utils
-from frappe.utils import cstr, flt, getdate, comma_and, cint
+from frappe.utils import cstr, flt, getdate, comma_and, cint,nowdate,now_datetime
 from frappe import _
 from frappe.model.mapper import get_mapped_doc
 from erpnext.stock.stock_balance import update_bin_qty, get_reserved_qty
 from frappe.desk.notifications import clear_doctype_notifications
+from frappe.model.naming import make_autoname
 
 from erpnext.controllers.selling_controller import SellingController
 
@@ -20,10 +21,14 @@ form_grid_templates = {
 class WarehouseRequired(frappe.ValidationError): pass
 
 class SalesOrder(SellingController):
+	def autoname(self):
+		year = int(now_datetime().strftime("%Y"))
+		self.name = make_autoname("TF-SO-"+str(year)+"-"+'.#####')
+
 	def validate(self):
 		super(SalesOrder, self).validate()
 
-		self.validate_order_type()
+		# self.validate_order_type()
 		# self.validate_delivery_date()
 		self.validate_mandatory()
 		self.validate_proj_cust()
