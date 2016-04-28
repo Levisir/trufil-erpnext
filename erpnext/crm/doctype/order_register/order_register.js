@@ -106,6 +106,7 @@ cur_frm.fields_dict['admin_address'].get_query = function(doc) {
 	}
 }
 
+// Return query for getting billing address details
 cur_frm.fields_dict['billing_address'].get_query = function(doc) {
 	return {
 		filters: {
@@ -192,7 +193,6 @@ frappe.ui.form.on("Order Register", {
 				}
 			});
 		}
-
 		/*if(frm.doc.sales_order) {
 			frappe.call({
 				method: "erpnext.crm.doctype.order_register.order_register.get_wo_info",
