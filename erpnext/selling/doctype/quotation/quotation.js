@@ -20,7 +20,7 @@ erpnext.selling.QuotationController = erpnext.selling.SellingController.extend({
 
 		if(doc.docstatus == 1 && doc.status!=='Lost') {
 			cur_frm.add_custom_button(__('Make Sales Order'),
-				cur_frm.cscript['Make Sales Order'], frappe.boot.doctype_icons["Sales Order"]);
+				cur_frm.cscript['Make Sales Order'], "icon-exclamation", "btn-default");
 			if(doc.status!=="Ordered") {
 				cur_frm.add_custom_button(__('Set as Lost'),
 					cur_frm.cscript['Declare Order Lost'], "icon-exclamation", "btn-default");

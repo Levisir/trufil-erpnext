@@ -80,7 +80,7 @@ cur_frm.cscript.refresh = function(doc, cdt, cdn) {
 
 	if(doc.status!=="Lost") {
 		cur_frm.add_custom_button(__('Create Quotation'),
-			cur_frm.cscript.create_quotation, frappe.boot.doctype_icons["Quotation"],
+			cur_frm.cscript.create_quotation, "icon-exclamation",
 			"btn-default");
 		if(doc.status!=="Quotation")
 			cur_frm.add_custom_button(__('Opportunity Lost'),
