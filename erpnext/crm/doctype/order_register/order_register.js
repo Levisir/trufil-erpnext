@@ -139,9 +139,12 @@ cur_frm.cscript.order_closing_date = function(doc,cdt,cdn){
 }
 
 cur_frm.fields_dict['sales_order'].get_query = function(doc) {
-	return {
-		filters: {
-			"docstatus": 1
+	if(doc.customer) {
+		return {
+			filters: {
+				"docstatus": 1,
+				"customer": doc.customer
+			}
 		}
 	}
 }
