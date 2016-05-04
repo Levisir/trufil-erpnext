@@ -90,7 +90,8 @@ def check_total_samples(doc, method):
 											and
 												name <> '%s'
 										"""%(doc.sales_order, doc.name), as_list=1)
-	if so_total_qty:
+	if doc.sales_order and so_total_qty[0]['so_qty']:
+		print so_total_qty
 		so_qty = flt(so_total_qty[0]['so_qty'])
 		existing_qty = flt(existing_sample_qty[0][0])
 		
