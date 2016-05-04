@@ -40,28 +40,28 @@ def get_contact_details(contact):
 	}
 	return out
 
-# @frappe.whitelist()
-# def get_wo_info(sales_order):
-# 	qty_query =	"""
-# 					select 
-# 						total_qty
-# 					from
-# 						`tabSales Order`
-# 					where
-# 						name = '%s' 
-# 				"""%(sales_order)
-# 	query = """
-# 				select 
-# 					ifnull(sum(total_samples), 0) 
-# 				from 
-# 					`tabOrder Register` 
-# 				where 
-# 					sales_order = '%s'
-# 			"""%(sales_order)
-# 	so_total_qty = frappe.db.sql(qty_query, as_list=1)
-# 	existing_sample_qty = frappe.db.sql(query, as_list=1)
-# 	if so_total_qty and existing_sample_qty:
-# 		return (flt(so_total_qty[0][0]) - existing_sample_qty[0][0])
+@frappe.whitelist()
+def get_total_sample(sales_order):
+	qty_query =	"""
+					select
+						total_qty
+					from
+						`tabSales Order`
+					where
+						name = '%s'
+				"""%(sales_order)
+	query = """
+				select
+					ifnull(sum(total_samples), 0)
+				from
+					`tabOrder Register`
+				where
+					sales_order = '%s'
+			"""%(sales_order)
+	so_total_qty = frappe.db.sql(qty_query, as_list=1)
+	existing_sample_qty = frappe.db.sql(query, as_list=1)
+	if so_total_qty and existing_sample_qty:
+		return (flt(so_total_qty[0][0]) - existing_sample_qty[0][0])
 
 @frappe.whitelist()
 def check_total_samples(doc, method):
@@ -91,7 +91,6 @@ def check_total_samples(doc, method):
 												name <> '%s'
 										"""%(doc.sales_order, doc.name), as_list=1)
 	if doc.sales_order and so_total_qty[0]['so_qty']:
-		print so_total_qty
 		so_qty = flt(so_total_qty[0]['so_qty'])
 		existing_qty = flt(existing_sample_qty[0][0])
 		
