@@ -73,8 +73,8 @@ class OrderRegister(Document):
 				sum_of_rate = so_total_qty[0]['sum_of_rate']
 				frappe.db.set_value("Sales Order", self.sales_order, "actual_quantity", (existing_qty + self.total_samples))
 				frappe.db.set_value("Sales Order", self.sales_order, "actual_order_value", ((existing_qty + self.total_samples) * sum_of_rate))
-				self.work_order_value=((existing_qty + self.total_samples) * sum_of_rate)
-	
+				frappe.db.set_value("Order Register", self.name, "work_order_value", ((existing_qty + self.total_samples) * sum_of_rate))	
+
 			if (so_qty) == (existing_qty + self.total_samples):
 				frappe.db.set_value("Sales Order", self.sales_order, "so_status", "Closed")
 			else:
