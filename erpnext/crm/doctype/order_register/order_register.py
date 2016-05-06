@@ -100,7 +100,8 @@ def check_total_samples(doc, method):
 			sum_of_rate = so_total_qty[0]['sum_of_rate']
 			frappe.db.set_value("Sales Order", doc.sales_order, "actual_quantity", (existing_qty + doc.total_samples))
 			frappe.db.set_value("Sales Order", doc.sales_order, "actual_order_value", ((existing_qty + doc.total_samples) * sum_of_rate))
-
+			frappe.db.set_value("Order Register", doc.name, "work_order_value", ((existing_qty + doc.total_samples) * sum_of_rate), debug=1)
+			
 		if (so_qty) == (existing_qty + doc.total_samples):
 			frappe.db.set_value("Sales Order", doc.sales_order, "so_status", "Closed")
 		else:
