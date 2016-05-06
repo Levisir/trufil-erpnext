@@ -23,6 +23,65 @@ class OrderRegister(Document):
 		year = int(now_datetime().strftime("%Y"))
 		self.name = make_autoname("TF-WO-"+str(year)+"-"+'.#####')
 
+	def on_submit(self):
+		self.check_total_samples()
+		self.sales_order_ref()
+		self.reload()
+
+	def sales_order_ref(self):
+		user = str(frappe.session['user'])
+		user_role =  frappe.get_roles(user)
+		assign_to = frappe.db.sql("""select owner from `tabToDo` where reference_name = '%s' """%(self.name))
+		if (not self.sales_order) and (not assign_to or not doc.approved_status == "Approved" or not "Sales Manager" in user_role):
+			frappe.throw("Assign and Approvement require");
+		else:
+			pass
+
+	def check_total_samples(self):
+		so_total_qty =	frappe.db.sql("""
+							select 
+								sum(soi.rate) as sum_of_rate, 
+								so.total_qty as so_qty
+							from 
+								`tabSales Order Item` soi, 
+								`tabSales Order` so 
+							where 
+								soi.parent = so.name 
+							and 
+								so.name = '%s' 
+						"""%(self.sales_order), as_dict=1)
+		
+		existing_sample_qty = frappe.db.sql("""
+												select 
+													sum(total_samples)
+												from 
+													`tabOrder Register` 
+												where 
+													sales_order = '%s'
+												and 
+													docstatus = 1
+												and
+													name <> '%s'
+											"""%(self.sales_order, self.name), as_list=1)
+		if self.sales_order and so_total_qty[0]['so_qty']:
+			so_qty = flt(so_total_qty[0]['so_qty'])
+			existing_qty = flt(existing_sample_qty[0][0])
+			
+			if so_qty < (existing_qty + self.total_samples):
+				frappe.throw("Total Samples exceed's than {0}'s Total Qty".format(self.sales_order))
+			else:
+				sum_of_rate = so_total_qty[0]['sum_of_rate']
+				frappe.db.set_value("Sales Order", self.sales_order, "actual_quantity", (existing_qty + self.total_samples))
+				frappe.db.set_value("Sales Order", self.sales_order, "actual_order_value", ((existing_qty + self.total_samples) * sum_of_rate))
+				self.work_order_value=((existing_qty + self.total_samples) * sum_of_rate)
+	
+			if (so_qty) == (existing_qty + self.total_samples):
+				frappe.db.set_value("Sales Order", self.sales_order, "so_status", "Closed")
+			else:
+				frappe.db.set_value("Sales Order", self.sales_order, "so_status", "In Progress")
+
+
+
 #Getting contact details after selecting contact name
 @frappe.whitelist()
 def get_contact_details(contact):
@@ -62,50 +121,6 @@ def get_total_sample(sales_order):
 	existing_sample_qty = frappe.db.sql(query, as_list=1)
 	if so_total_qty and existing_sample_qty:
 		return (flt(so_total_qty[0][0]) - existing_sample_qty[0][0])
-
-@frappe.whitelist()
-def check_total_samples(doc, method):
-	so_total_qty =	frappe.db.sql("""
-						select 
-							sum(soi.rate) as sum_of_rate, 
-							so.total_qty as so_qty
-						from 
-							`tabSales Order Item` soi, 
-							`tabSales Order` so 
-						where 
-							soi.parent = so.name 
-						and 
-							so.name = '%s' 
-					"""%(doc.sales_order), as_dict=1)
-	
-	existing_sample_qty = frappe.db.sql("""
-											select 
-												sum(total_samples)
-											from 
-												`tabOrder Register` 
-											where 
-												sales_order = '%s'
-											and 
-												docstatus = 1
-											and
-												name <> '%s'
-										"""%(doc.sales_order, doc.name), as_list=1)
-	if doc.sales_order and so_total_qty[0]['so_qty']:
-		so_qty = flt(so_total_qty[0]['so_qty'])
-		existing_qty = flt(existing_sample_qty[0][0])
-		
-		if so_qty < (existing_qty + doc.total_samples):
-			frappe.throw("Total Samples exceed's than {0}'s Total Qty".format(doc.sales_order))
-		else:
-			sum_of_rate = so_total_qty[0]['sum_of_rate']
-			frappe.db.set_value("Sales Order", doc.sales_order, "actual_quantity", (existing_qty + doc.total_samples))
-			frappe.db.set_value("Sales Order", doc.sales_order, "actual_order_value", ((existing_qty + doc.total_samples) * sum_of_rate))
-			frappe.db.set_value("Order Register", doc.name, "work_order_value", ((existing_qty + doc.total_samples) * sum_of_rate), debug=1)
-			
-		if (so_qty) == (existing_qty + doc.total_samples):
-			frappe.db.set_value("Sales Order", doc.sales_order, "so_status", "Closed")
-		else:
-			frappe.db.set_value("Sales Order", doc.sales_order, "so_status", "In Progress")
 
 @frappe.whitelist()
 def create_sample_entry(source_name, target_doc=None):
