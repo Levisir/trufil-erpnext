@@ -196,9 +196,9 @@ frappe.ui.form.on("Order Register", {
 				}
 			});
 		}
-		/*if(frm.doc.sales_order) {
+		if(frm.doc.sales_order && frm.doc.__islocal) {
 			frappe.call({
-				method: "erpnext.crm.doctype.order_register.order_register.get_wo_info",
+				method: "erpnext.crm.doctype.order_register.order_register.get_total_sample",
 				args: {
 					sales_order: frm.doc.sales_order
 				},
@@ -209,24 +209,37 @@ frappe.ui.form.on("Order Register", {
 					}
 				}
 			})
-		}*/
-		},
-
-		sales_order: function(frm) {
-			if(frm.doc.sales_order) {
-				frm.call({
-					method: "frappe.client.get_value",
-					args: {
-						doctype: "Customer",
-						fieldname: "customer_code",
-						filters: { name: me.frm.doc.customer },
-					},
-					callback: function(r, rt) {
-						if(r.message) {
-							me.frm.set_value("customer_code", r.message.customer_code);
-						}
-					}
-				})
-			}
 		}
-	});
+	},
+
+	sales_order: function(frm) {
+		if(frm.doc.sales_order) {
+			frm.call({
+				method: "frappe.client.get_value",
+				args: {
+					doctype: "Customer",
+					fieldname: "customer_code",
+					filters: { name: me.frm.doc.customer },
+				},
+				callback: function(r, rt) {
+					if(r.message) {
+						me.frm.set_value("customer_code", r.message.customer_code);
+					}
+				}
+			});
+			
+			frappe.call({
+				method: "erpnext.crm.doctype.order_register.order_register.get_total_sample",
+				args: {
+					sales_order: frm.doc.sales_order
+				},
+				callback: function(r) {
+					if(r.message) {
+						cur_frm.set_value("total_samples", r.message);
+						refresh_field("total_samples")
+					}
+				}
+			})
+		}
+	}
+});
