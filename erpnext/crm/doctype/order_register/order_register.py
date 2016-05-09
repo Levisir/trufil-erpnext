@@ -32,7 +32,7 @@ class OrderRegister(Document):
 		user = str(frappe.session['user'])
 		user_role =  frappe.get_roles(user)
 		assign_to = frappe.db.sql("""select owner from `tabToDo` where reference_name = '%s' """%(self.name))
-		if (not self.sales_order) and (not assign_to or not doc.approved_status == "Approved" or not "Sales Manager" in user_role):
+		if (not self.sales_order) and (not assign_to or not self.approved_status == "Approved" or not "Sales Manager" in user_role):
 			frappe.throw("Assign and Approvement require");
 		else:
 			pass
