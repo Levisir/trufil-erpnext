@@ -4,7 +4,7 @@
 cur_frm.cscript.refresh = function(doc,cdt,cdn){
 	cur_frm.toggle_enable('user_input', doc.__islocal);
 	if(doc.naming_series=='CUST-')
-		cur_frm.toggle_enable('customer_code', doc.__islocal);
+		cur_frm.toggle_enable('customer_name', doc.__islocal);
 
 	var last_route = frappe.route_history.slice(-2, -1)[0];
 	if(last_route && last_route[0]==="Form") {
