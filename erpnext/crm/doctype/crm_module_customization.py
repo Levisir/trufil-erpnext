@@ -6,13 +6,6 @@ from frappe import _
 from frappe.model.db_query import DatabaseQuery
 
 
-
-# Validation customer code on on_update of customer form
-def validate_customer_code(doc,method):
-	if frappe.db.sql("""select name from `tabCustomer` where name!='%s' and customer_code='%s'"""%(doc.name,doc.customer_code)):
-		frappe.msgprint("Customer code '%s' is already assigned for another customer"%doc.customer_code,raise_exception=1)
-
-
 # Generation of contact code while saving contact form
 def generate_contact_code(doc,method):
 	if doc.customer_code and doc.user_input:

@@ -111,9 +111,6 @@ doc_events = {
 	"Price List": {
 		"on_update": "erpnext.shopping_cart.doctype.shopping_cart_settings.shopping_cart_settings.validate_cart_settings"
 	},
-	"Customer": {
-		"validate": "erpnext.crm.doctype.crm_module_customization.validate_customer_code"
-	},
 	"Contact": {
 		"validate": "erpnext.crm.doctype.crm_module_customization.generate_contact_code"
 	},
