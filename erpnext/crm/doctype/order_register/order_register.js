@@ -241,5 +241,8 @@ frappe.ui.form.on("Order Register", {
 				}
 			})
 		}
+		if(!frm.doc.sales_order && !frm.doc.__islocal) {
+			cur_frm.set_df_property("approved_status", "reqd", 1);
+		}
 	}
 });
