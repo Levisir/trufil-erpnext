@@ -8,7 +8,7 @@ from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import flt, getdate, nowdate,now_datetime
 from frappe.model.naming import make_autoname
-
+from datetime import datetime
 
 class OrderRegister(Document):
 	def validate(self):
@@ -16,8 +16,53 @@ class OrderRegister(Document):
 			contract_doc=frappe.get_doc("Contract",self.contract)
 			if getdate(self.order_date) < getdate(contract_doc.contract_start_date):
 				frappe.throw("Work Order Date < Contract Start Date")
-			# work_order_doc.quantity_received=sample_count[0][0]
-			# work_order_doc.save()
+
+		if self.wo_ref_date and self.sales_order:
+			so_date_unicode = frappe.db.get_value("Sales Order", self.sales_order, "order_end_date")
+			so_date = datetime.strptime(str(so_date_unicode), '%Y-%m-%d')
+			if so_date < datetime.strptime(str(self.wo_ref_date), '%Y-%m-%d') and so_date:
+				frappe.throw("Work Order Ref Date should be less than Sales Order End Date")
+
+	def check_contract_value(self):
+		contract_value_unicode = frappe.db.get_value("Sales Order", self.sales_order, "contract_value")
+		if contract_value_unicode and self.sales_order:
+			existing_sample_qty = frappe.db.sql("""
+												select 
+													sum(total_samples)
+												from 
+													`tabOrder Register` 
+												where 
+													sales_order = '%s'
+												and 
+													docstatus = 1
+												and
+													name <> '%s'
+											"""%(self.sales_order, self.name), as_list=1)
+			print flt(existing_sample_qty[0][0]),"existing_sample_qty"
+			print contract_qty_unicode,"contract_qty_unicode"
+			if flt(existing_sample_qty) > flt(contract_qty_unicode):
+				frappe.throw("Total Samples Ordered should be less than equal to Contract Qty")
+
+
+	def check_contract_qty(self):
+		contract_qty_unicode = frappe.db.get_value("Sales Order", self.sales_order, "contract_quantities")
+		if contract_qty_unicode and self.sales_order:
+			existing_sample_qty = frappe.db.sql("""
+												select 
+													sum(total_samples)
+												from 
+													`tabOrder Register` 
+												where 
+													sales_order = '%s'
+												and 
+													docstatus = 1
+												and
+													name <> '%s'
+											"""%(self.sales_order, self.name), as_list=1)
+			print flt(existing_sample_qty[0][0]),"existing_sample_qty"
+			print contract_qty_unicode,"contract_qty_unicode"
+			if flt(existing_sample_qty) > flt(contract_qty_unicode):
+				frappe.throw("Total Samples Ordered should be less than equal to Contract Qty")
 
 	def autoname(self):
 		year = int(now_datetime().strftime("%Y"))
@@ -26,6 +71,7 @@ class OrderRegister(Document):
 	def on_submit(self):
 		self.check_total_samples()
 		self.sales_order_ref()
+		self.check_contract_qty()
 		self.reload()
 
 	def sales_order_ref(self):
