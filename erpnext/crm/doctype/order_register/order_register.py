@@ -19,9 +19,10 @@ class OrderRegister(Document):
 
 		if self.wo_ref_date and self.sales_order:
 			so_date_unicode = frappe.db.get_value("Sales Order", self.sales_order, "order_end_date")
-			so_date = datetime.strptime(str(so_date_unicode), '%Y-%m-%d')
-			if so_date < datetime.strptime(str(self.wo_ref_date), '%Y-%m-%d') and so_date:
-				frappe.throw("Work Order Ref Date should be less than Sales Order End Date")
+			if so_date_unicode:
+				so_date = datetime.strptime(str(so_date_unicode), '%Y-%m-%d')
+				if so_date < datetime.strptime(str(self.wo_ref_date), '%Y-%m-%d') and so_date:
+					frappe.throw("Work Order Ref Date should be less than Sales Order End Date")
 
 	def check_contract_value(self):
 		contract_value_unicode = frappe.db.get_value("Sales Order", self.sales_order, "contract_value")
@@ -59,19 +60,40 @@ class OrderRegister(Document):
 												and
 													name <> '%s'
 											"""%(self.sales_order, self.name), as_list=1)
-			print flt(existing_sample_qty[0][0]),"existing_sample_qty"
-			print contract_qty_unicode,"contract_qty_unicode"
 			if flt(existing_sample_qty) > flt(contract_qty_unicode):
 				frappe.throw("Total Samples Ordered should be less than equal to Contract Qty")
+
+	def check_contract_value(self):
+		contract_value_unicode = frappe.db.get_value("Sales Order", self.sales_order, "contract_value")
+		if contract_value_unicode and self.sales_order:
+			existing_wo_value = frappe.db.sql("""
+												select 
+													sum(work_order_value)
+												from 
+													`tabOrder Register` 
+												where 
+													sales_order = '%s'
+												and 
+													docstatus = 1
+												and
+													name <> '%s'
+											"""%(self.sales_order, self.name), as_list=1)
+			if flt(existing_wo_value[0][0]) > flt(contract_value_unicode):
+				frappe.throw("Total Work Order Value should be less than equal to Contract Value in Sales Order")
+
 
 	def autoname(self):
 		year = int(now_datetime().strftime("%Y"))
 		self.name = make_autoname("TF-WO-"+str(year)+"-"+'.#####')
 
+	def before_submit(self):
+		self.check_contract_value()
+
 	def on_submit(self):
 		self.check_total_samples()
 		self.sales_order_ref()
 		self.check_contract_qty()
+		self.check_contract_value()
 		self.reload()
 
 	def sales_order_ref(self):
@@ -80,7 +102,7 @@ class OrderRegister(Document):
 		assign_to = frappe.db.sql("""select owner from `tabToDo` where reference_name = '%s' """%(self.name))
 		if (not self.sales_order) and (not assign_to):
 			frappe.throw("Sales Order reference is not given please assign to someone");
-		if (not self.approved_status == "Approved") or (not "Sales Manager" in user_role):
+		if (not self.approved_status == "Approved") and (not "Sales Manager" in user_role):
 			frappe.throw("Only Sales Manager can Approved and submit this");
 		else:
 			pass
