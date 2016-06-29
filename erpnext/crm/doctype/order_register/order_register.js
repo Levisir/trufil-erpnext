@@ -153,13 +153,13 @@ cur_frm.fields_dict['sales_order'].get_query = function(doc) {
 frappe.ui.form.on("Order Register", {
 	refresh: function(frm,doctype,name) {
 		if (frm.doc.docstatus===0) {
-			cur_frm.add_custom_button(__('From Contract'),
-				function() {
-					frappe.model.map_current_doc({
-						method: "sample_register.sample_register.doctype.contract.contract.make_work_order",
-						source_doctype: "Contract",
-					})
-				}, "icon-download", "btn-default");
+			// cur_frm.add_custom_button(__('From Contract'),
+			// 	function() {
+			// 		frappe.model.map_current_doc({
+			// 			method: "sample_register.sample_register.doctype.contract.contract.make_work_order",
+			// 			source_doctype: "Contract",
+			// 		})
+			// 	}, "icon-download", "btn-default");
 			
 			cur_frm.add_custom_button(__("From Sales Order"),
 			function() {
