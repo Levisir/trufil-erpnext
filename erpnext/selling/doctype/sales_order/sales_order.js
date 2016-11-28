@@ -79,9 +79,9 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 				}
 
 				// sales invoice
-				if(flt(doc.per_billed, 2) < 100) {
-					cur_frm.add_custom_button(__('Invoice'), this.make_sales_invoice).addClass("btn-primary");
-				}
+				// if(flt(doc.per_billed, 2) < 100) {
+				// 	cur_frm.add_custom_button(__('Invoice'), this.make_sales_invoice).addClass("btn-primary");
+				// }
 				cur_frm.add_custom_button(__("Show Test Details"), function() {
 					frappe.route_options = {
 						"sales_order": cur_frm.doc.name
