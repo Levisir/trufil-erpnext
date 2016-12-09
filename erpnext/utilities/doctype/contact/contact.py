@@ -16,7 +16,7 @@ class Contact(StatusUpdater):
 		# concat party name if reqd
 		for fieldname in ("customer", "supplier", "sales_partner"):
 			if self.get(fieldname):
-				self.name = self.name + "-" + cstr(self.get(fieldname)).strip()
+				self.name = cstr(self.get(fieldname)).strip() + "-" + self.name + "-" + cstr(self.user_input).strip()
 				break
 
 	def validate(self):

@@ -78,18 +78,18 @@ def lead_query(doctype, txt, searchfield, start, page_len, filters):
  # searches for customer
 def customer_query(doctype, txt, searchfield, start, page_len, filters):
 	cust_master_name = frappe.defaults.get_user_default("cust_master_name")
-
 	if cust_master_name == "Customer Name":
-		fields = ["name", "customer_group", "territory"]
+		fields = ["name", "customer_group", "territory", "customer_code"]
 	else:
-		fields = ["name", "customer_name", "customer_group", "territory"]
+		fields = ["name", "customer_name", "customer_group", "territory", customer_code]
 
 	fields = ", ".join(fields)
 
 	return frappe.db.sql("""select {fields} from `tabCustomer`
 		where docstatus < 2
 			and ({key} like %(txt)s
-				or customer_name like %(txt)s)
+				or customer_name like %(txt)s
+				or customer_code like %(txt)s)
 			{mcond}
 		order by
 			if(locate(%(_txt)s, name), locate(%(_txt)s, name), 99999),

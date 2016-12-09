@@ -21,11 +21,19 @@ cur_frm.add_fetch('contract','contract_expiry_date','contract_expiry_date');
 cur_frm.add_fetch('contract','customer','customer');
 cur_frm.add_fetch('contract','customer_code','customer_code');
 cur_frm.add_fetch('contract','customer_name','customer_name');
-
+cur_frm.add_fetch("sales_order", "po_no", "po_no");
+cur_frm.add_fetch("sales_order", "po_date", "po_date")
+cur_frm.add_fetch("sales_order", "customer", "customer")
+/*cur_frm.add_fetch("sales_order","total_qty","total_samples")*/
 // Method to get address details
 cur_frm.cscript.admin_address = function(doc,cdt,cdn){
 
 	erpnext.utils.get_address_display(this.frm, "admin_address","admin_address_details");
+}
+
+cur_frm.cscript.billing_address = function(doc,cdt,cdn){
+
+	erpnext.utils.get_address_display(this.frm, "billing_address","billing_address_details");
 }
 
 
@@ -92,7 +100,18 @@ cur_frm.fields_dict['admin_address'].get_query = function(doc) {
 	return {
 		filters: {
 			
-			"address_type": 'Administrative',
+			"admin_address": 1,
+			"customer": doc.customer
+		}
+	}
+}
+
+// Return query for getting billing address details
+cur_frm.fields_dict['billing_address'].get_query = function(doc) {
+	return {
+		filters: {
+			
+			"billing_address": 1,
 			"customer": doc.customer
 		}
 	}
@@ -118,15 +137,112 @@ cur_frm.cscript.order_closing_date = function(doc,cdt,cdn){
 			msgprint("Order Closing Date must be greater than order date")
 	}
 }
-frappe.ui.form.on("Order Register", "refresh", function(frm,doctype,name) {
 
-		if (frm.doc.docstatus===0) {
-			cur_frm.add_custom_button(__('From Contract'),
-				function() {
-					frappe.model.map_current_doc({
-						method: "sample_register.sample_register.doctype.contract.contract.make_work_order",
-						source_doctype: "Contract",
-					})
-				}, "icon-download", "btn-default");
+cur_frm.fields_dict['sales_order'].get_query = function(doc) {
+	if(doc.customer) {
+		return {
+			filters: {
+				"docstatus": 1,
+				"customer": doc.customer
+			}
 		}
+	}
+}
+
+
+frappe.ui.form.on("Order Register", {
+	refresh: function(frm,doctype,name) {
+		if (frm.doc.docstatus===0) {
+			// cur_frm.add_custom_button(__('From Contract'),
+			// 	function() {
+			// 		frappe.model.map_current_doc({
+			// 			method: "sample_register.sample_register.doctype.contract.contract.make_work_order",
+			// 			source_doctype: "Contract",
+			// 		})
+			// 	}, "icon-download", "btn-default");
+			
+			cur_frm.add_custom_button(__("From Sales Order"),
+			function() {
+				frappe.model.map_current_doc({
+					method: "sample_register.custom_py_methods.make_order_register",
+					source_doctype: "Sales Order",
+					get_query_filters: {
+						docstatus: 1,
+						status: ["not in", ["Stopped", "Closed"]],
+						customer: cur_frm.doc.customer || undefined,
+						company: cur_frm.doc.company
+					}
+				})
+			}, "icon-download", "btn-default")	
+		}
+
+		if(frm.doc.docstatus == 1) {
+		cur_frm.add_custom_button(__("Create Sample Entry"),
+			function() {
+				frappe.model.open_mapped_doc({
+						method: "erpnext.crm.doctype.order_register.order_register.create_sample_entry",
+						frm: cur_frm
+				})
+			})
+		}
+
+		if(frm.doc.customer){
+			frm.call({
+				method: "frappe.client.get_value",
+				args: {
+					doctype: "Customer",
+					fieldname: "customer_code",
+					filters: { name: frm.doc.customer },
+				}
+			});
+		}
+		if(frm.doc.sales_order && frm.doc.__islocal) {
+			frappe.call({
+				method: "erpnext.crm.doctype.order_register.order_register.get_total_sample",
+				args: {
+					sales_order: frm.doc.sales_order
+				},
+				callback: function(r) {
+					if(r.message) {
+						cur_frm.set_value("total_samples", r.message);
+						refresh_field("total_samples")
+					}
+				}
+			})
+		}
+		if(!frm.doc.sales_order && !frm.doc.__islocal) {
+			cur_frm.set_df_property("approved_status", "reqd", 1);
+		}
+	},
+
+	sales_order: function(frm) {
+		if(frm.doc.sales_order) {
+			frm.call({
+				method: "frappe.client.get_value",
+				args: {
+					doctype: "Customer",
+					fieldname: "customer_code",
+					filters: { name: me.frm.doc.customer },
+				},
+				callback: function(r, rt) {
+					if(r.message) {
+						me.frm.set_value("customer_code", r.message.customer_code);
+					}
+				}
+			});
+			
+			frappe.call({
+				method: "erpnext.crm.doctype.order_register.order_register.get_total_sample",
+				args: {
+					sales_order: frm.doc.sales_order
+				},
+				callback: function(r) {
+					if(r.message) {
+						cur_frm.set_value("total_samples", r.message);
+						refresh_field("total_samples")
+					}
+				}
+			})
+		}
+	}
 });

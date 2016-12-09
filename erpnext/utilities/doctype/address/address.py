@@ -16,7 +16,7 @@ class Address(Document):
 				or self.supplier or self.sales_partner or self.lead
 
 		if self.address_title:
-			self.name = cstr(self.address_title).strip() + "-" + cstr(self.address_type).strip()
+			self.name = cstr(self.address_title).strip() + "-" + cstr(self.address_type).strip() + "-" + cstr(self.user_input).strip()
 		else:
 			throw(_("Address Title is mandatory."))
 

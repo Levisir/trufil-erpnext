@@ -1,6 +1,6 @@
 // Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 // License: GNU General Public License v3. See license.txt
-
+{% include "custom_js_methods.js" %}
 frappe.provide("erpnext.crm");
 frappe.require("assets/erpnext/js/utils.js");
 cur_frm.email_field = "contact_email";
@@ -80,7 +80,7 @@ cur_frm.cscript.refresh = function(doc, cdt, cdn) {
 
 	if(doc.status!=="Lost") {
 		cur_frm.add_custom_button(__('Create Quotation'),
-			cur_frm.cscript.create_quotation, frappe.boot.doctype_icons["Quotation"],
+			cur_frm.cscript.create_quotation, "icon-exclamation",
 			"btn-default");
 		if(doc.status!=="Quotation")
 			cur_frm.add_custom_button(__('Opportunity Lost'),

@@ -2,6 +2,7 @@
 // License: GNU General Public License v3. See license.txt
 
 {% include 'selling/sales_common.js' %}
+{% include "sample_register/custom_js_methods.js" %}
 
 frappe.ui.form.on("Sales Order", {
 	onload: function(frm) {
@@ -42,21 +43,21 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 				}
 
 				// material request
-				if(!doc.order_type || ["Sales", "Shopping Cart"].indexOf(doc.order_type)!==-1
+				/*if(!doc.order_type || ["Sales", "Shopping Cart"].indexOf(doc.order_type)!==-1
 					&& flt(doc.per_delivered, 2) < 100) {
 						cur_frm.add_custom_button(__('Material Request'), this.make_material_request);
-				}
+				}*/
 
 				// make purchase order
 				if(flt(doc.per_delivered, 2) < 100 && allow_purchase) {
 					cur_frm.add_custom_button(__('Purchase Order'), cur_frm.cscript.make_purchase_order);
 				}
 
-				if(flt(doc.per_billed)==0) {
+				/*if(flt(doc.per_billed)==0) {
 					cur_frm.add_custom_button(__('Payment'), cur_frm.cscript.make_bank_entry);
-				}
+				}*/
 
-				if (this.frm.has_perm("submit")) {
+				/*if (this.frm.has_perm("submit")) {
 					// stop
 					if(flt(doc.per_delivered, 2) < 100 || flt(doc.per_billed) < 100) {
 							cur_frm.add_custom_button(__('Stop'), this.stop_sales_order)
@@ -64,13 +65,13 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 
 
 					cur_frm.add_custom_button(__('Close'), this.close_sales_order)
-				}
+				}*/
 
 				// maintenance
-				if(flt(doc.per_delivered, 2) < 100 && ["Sales", "Shopping Cart"].indexOf(doc.order_type)===-1) {
+				/*if(flt(doc.per_delivered, 2) < 100 && ["Sales", "Shopping Cart"].indexOf(doc.order_type)===-1) {
 					cur_frm.add_custom_button(__('Maint. Visit'), this.make_maintenance_visit);
 					cur_frm.add_custom_button(__('Maint. Schedule'), this.make_maintenance_schedule);
-				}
+				}*/
 
 				// delivery note
 				if(flt(doc.per_delivered, 2) < 100 && ["Sales", "Shopping Cart"].indexOf(doc.order_type)!==-1 && allow_delivery) {
@@ -78,10 +79,15 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 				}
 
 				// sales invoice
-				if(flt(doc.per_billed, 2) < 100) {
-					cur_frm.add_custom_button(__('Invoice'), this.make_sales_invoice).addClass("btn-primary");
-				}
-
+				// if(flt(doc.per_billed, 2) < 100) {
+				// 	cur_frm.add_custom_button(__('Invoice'), this.make_sales_invoice).addClass("btn-primary");
+				// }
+				cur_frm.add_custom_button(__("Show Test Details"), function() {
+					frappe.route_options = {
+						"sales_order": cur_frm.doc.name
+					}
+					frappe.set_route("query-report", "Sales Order Test Details");
+				});
 
 			} else {
 				if (this.frm.has_perm("submit")) {
@@ -108,12 +114,12 @@ erpnext.selling.SalesOrderController = erpnext.selling.SellingController.extend(
 				});
 		}
 
-		this.order_type(doc);
+		/*this.order_type(doc);*/
 	},
 
-	order_type: function() {
+	/*order_type: function() {
 		this.frm.toggle_reqd("delivery_date", this.frm.doc.order_type == "Sales");
-	},
+	},*/
 
 	tc_name: function() {
 		this.get_terms();
